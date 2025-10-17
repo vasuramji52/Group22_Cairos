@@ -12,62 +12,25 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
-            - name: Install sshpass (for password-based SSH)
-              run: sudo apt-get update && sudo apt-get install -y sshpass
+            - name: Install sshpass + rsync (for password SSH and safe file sync)
+              run: sudo apt-get update && sudo apt-get install -y sshpass rsync
 
-            - name: Deploy to Droplet
+            - name: Deploy to Droplet (password-based SSH)
               env:
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-                  SSH_KEY: ${{ secrets.SSH_KEY }}
+                  SSH_HOST: ${{ secrets.SSH_HOST }} # e.g., your droplet IP or domain
+                  SSH_USERNAME: ${{ secrets.SSH_USERNAME }} # e.g., root or your sudo user
+                  SSH_KEY: ${{ secrets.SSH_KEY }} # your SSH PASSWORD (not a key) for sshpass
               run: |
-                  sshpass -p "$SSH_KEY" ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+                  set -e
+                  sshpass -p "$SSH_KEY" ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
                   set -e
 
                   ###############
                   # FRONTEND (Vite in ./frontend)
                   ###############
-                  cd /var/www/html
-                  # if you cloned the repo into a subdir like "site", enter it
-                  [ -d site ] && cd site
-
-                  # make sure we are in the repo root on the server, then go to frontend/
-                  if [ -d frontend ]; then
-                    cd frontend
+                  # Choose the repo path you cloned: /var/www/html/site (recommended) or /var/www/html
+                  if [ -d /var/www/html/site ]; then
+                    REPO_ROOT="/var/www/html/site"
+                  else
+                    REPO_ROOT="/var/www/html"
                   fi
-
-                  git pull origin main
-                  npm install
-                  npm run build   # produces ./dist
-
-                  # Deploy built assets to Nginx web root (two levels up from ./frontend)
-                  cd ..
-                  # clean old files at the web root (keeps it tidy; adjust if you have uploads there)
-                  rm -rf ../dist-temp
-                  mkdir -p ../dist-temp
-                  cp -r frontend/dist/* ../dist-temp/
-                  cd ..
-                  # now we are at the directory that contains the web root; copy into /var/www/html
-                  cp -r dist-temp/* /var/www/html/
-                  rm -rf dist-temp
-
-                  # reload or restart Nginx
-                  sudo systemctl reload nginx || sudo systemctl restart nginx
-
-                  ###############
-                  # BACKEND (Node/Express in ./backend)
-                  ###############
-                  cd /var/cardsServer
-                  # if you cloned into "api", enter it
-                  [ -d api ] && cd api
-
-                  # enter backend subfolder if present
-                  if [ -d backend ]; then
-                    cd backend
-                  fi
-
-                  git pull origin main
-                  npm install
-                  pm2 restart express-server || pm2 start server.js --name "express-server"
-                  pm2 save
-                  EOF
