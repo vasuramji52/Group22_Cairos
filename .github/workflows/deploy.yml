@@ -1,36 +1,70 @@
 name: Deploy MERN (main)
 
 on:
-    push:
-        branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Install sshpass + rsync (for password SSH and safe file sync)
-              run: sudo apt-get update && sudo apt-get install -y sshpass rsync
+      - name: Install sshpass (password-based SSH)
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-            - name: Deploy to Droplet (password-based SSH)
-              env:
-                  SSH_HOST: ${{ secrets.SSH_HOST }} # e.g., your droplet IP or domain
-                  SSH_USERNAME: ${{ secrets.SSH_USERNAME }} # e.g., root or your sudo user
-                  SSH_KEY: ${{ secrets.SSH_KEY }} # your SSH PASSWORD (not a key) for sshpass
-              run: |
-                  set -e
-                  sshpass -p "$SSH_KEY" ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
-                  set -e
+      - name: Deploy to Droplet
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }} # this is your SSH PASSWORD
+        run: |
+          set -e
+          sshpass -p "$SSH_KEY" ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
+          set -e
 
-                  ###############
-                  # FRONTEND (Vite in ./frontend)
-                  ###############
-                  # Choose the repo path you cloned: /var/www/html/site (recommended) or /var/www/html
-                  if [ -d /var/www/html/site ]; then
-                    REPO_ROOT="/var/www/html/site"
-                  else
-                    REPO_ROOT="/var/www/html"
-                  fi
+          echo "🚀 Deploying..."
+
+          ############################
+          # FRONTEND (Vite React)
+          # Repo path on server: /var/www/html/Group22_PurpleProject/frontend
+          ############################
+          cd /var/www/html/Group22_PurpleProject/frontend
+
+          echo "📦 Sync to latest main"
+          git fetch origin
+          git reset --hard origin/main
+
+          echo "⚙️ Build"
+          npm ci
+          npm run build
+
+          echo "📁 Publish to Nginx web root (safe copy)"
+          sudo rm -rf /var/www/html/assets
+          sudo cp -f dist/index.html /var/www/html/index.html
+          sudo cp -f dist/vite.svg   /var/www/html/vite.svg 2>/dev/null || true
+          sudo cp -r dist/assets     /var/www/html/assets
+          sudo chown -R www-data:www-data /var/www/html
+          sudo nginx -t && sudo systemctl reload nginx
+
+          ############################
+          # BACKEND (Node/Express)
+          # Repo path on server: /var/cardsServer/api/backend
+          ############################
+          if [ -d /var/cardsServer/api/backend ]; then
+            cd /var/cardsServer/api/backend
+          else
+            cd /var/cardsServer/backend
+          fi
+
+          echo "🔄 Update backend to latest main"
+          git fetch origin
+          git reset --hard origin/main
+          npm ci
+          pm2 restart express-server || pm2 start server.js --name "express-server"
+          pm2 save
+
+          echo "✅ Done."
+          EOF
