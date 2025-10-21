@@ -1,4 +1,4 @@
-const app_name = 'cop4331-5.com';
+const app_name = 'vasupradha.xyz';
 
 export function buildPath(route: string): string {
     if (import.meta.env.MODE !== 'development') {
