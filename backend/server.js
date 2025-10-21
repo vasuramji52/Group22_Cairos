@@ -1,9 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const MongoClient = require('mongodb').MongoClient;
+const { MongoClient } = require('mongodb');
+
 const url = process.env.MONGODB_URI;
 if (!url) {
   console.error('❌ MONGODB_URI is missing. Check backend/.env');
@@ -13,17 +14,38 @@ const client = new MongoClient(url);
 client.connect();
 
 app.use(cors());
-// app.use(bodyParser.json());
 app.use(express.json());
 
-var api = require('./api.js');
-api.setApp( app, client );
+// local API path:
+const api = require('./api.js');
+api.setApp(app, client);
+
+// require('dotenv').config({ path: __dirname + '/api/backend/.env' });
+
+// const express = require('express');
+// const cors = require('cors');
+// const app = express();
+// const MongoClient = require('mongodb').MongoClient;
+// const url = process.env.MONGODB_URI;
+// if (!url) {
+//   console.error('❌ MONGODB_URI is missing. Check backend/.env');
+//   process.exit(1);
+// }
+// const client = new MongoClient(url);
+// client.connect();
+
+// app.use(cors());
+// // app.use(bodyParser.json());
+// app.use(express.json());
+
+// var api = require('./api/backend/api.js');
+// api.setApp( app, client );
 
 
-var cardList =
-    [
-        ''
-    ];
+// var cardList =
+//     [
+//         ''
+//     ];
 
 
 
