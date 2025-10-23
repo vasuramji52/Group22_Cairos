@@ -28,9 +28,15 @@ const client = new MongoClient(url);
 app.use(cors());
 app.use(express.json());
 
+app.get('/__ping', (_req, res) => res.json({ ok: true, where: 'server.js' }));
+
 // --- API routes ---
 const api = require('./api.js');
+const auth = require('./auth.js');  
+
+auth.setApp(app, client);
 api.setApp(app, client);
+
 
 // Optional healthcheck
 app.get('/api/ping', (_req, res) => res.json({ ok: true }));

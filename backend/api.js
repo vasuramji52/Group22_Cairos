@@ -44,7 +44,7 @@ exports.setApp = function ( app, client )
 	});
 
 
-	app.post('/api/login', async (req, res, next) => 
+	/*app.post('/api/login', async (req, res, next) => 
 	{
 		// incoming: login, password
 		// outgoing: jwt token or error
@@ -78,7 +78,7 @@ exports.setApp = function ( app, client )
 		}
 
 		res.status(200).json(ret);
-	});
+	}); */
 
 
 	app.post('/api/searchcards', async (req, res, next) =>
@@ -95,7 +95,8 @@ exports.setApp = function ( app, client )
 			res.status(200).json(r);
 			return;
 			}
-		} catch (e) {
+		} catch (e) 
+		{
 			console.log("isExpired check error:", e.message);
 		}
 
