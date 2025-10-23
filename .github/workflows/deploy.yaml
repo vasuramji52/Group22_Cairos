@@ -1,0 +1,74 @@
+name: Deploy to Droplet
+
+on:
+  push:
+    branches: [ main ]          # run on pushes to main
+  workflow_dispatch:            # allow manual “Run workflow” button
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (for completeness)
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy to Droplet
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}   # store your droplet password in this secret
+        run: |
+          set -e
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
+          set -e
+
+          echo "🚀 Deploying..."
+
+          # Git safe.directory (avoid 'dubious ownership' warnings)
+          git config --global --add safe.directory /var/www/html/Group22_PurpleProject || true
+          git config --global --add safe.directory /var/cardsServer/api || true
+          git config --global --add safe.directory /var/cardsServer || true
+
+          # Optional ownership normalization
+          chown -R "$USER":"$USER" /var/www/html/Group22_PurpleProject || true
+          chown -R "$USER":"$USER" /var/cardsServer || true
+
+          ############################
+          # FRONTEND
+          ############################
+          cd /var/www/html/Group22_PurpleProject/frontend
+          git fetch origin
+          git reset --hard origin/main
+          npm ci
+          npm run build
+
+          # Publish to web root (served by nginx)
+          rm -rf /var/www/html/assets
+          cp -f dist/index.html /var/www/html/index.html
+          cp -f dist/vite.svg   /var/www/html/vite.svg 2>/dev/null || true
+          cp -r dist/assets     /var/www/html/assets
+          chown -R www-data:www-data /var/www/html
+          nginx -t && systemctl reload nginx
+
+          ############################
+          # BACKEND
+          ############################
+          if [ -d /var/cardsServer/api/backend ]; then
+            cd /var/cardsServer/api/backend
+          else
+            cd /var/cardsServer/backend
+          fi
+
+          git fetch origin
+          git reset --hard origin/main
+          npm ci
+
+          pm2 restart express-server || pm2 start server.js --name "express-server" --time
+          pm2 save
+
+          echo "✅ Deployment complete."
+          EOF
