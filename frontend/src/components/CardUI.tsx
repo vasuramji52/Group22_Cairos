@@ -1,3 +1,4 @@
+// Old archi
 import React, { useState } from 'react';
 import { buildPath } from './path';
 import { retrieveToken, storeToken } from '../tokenStorage';
