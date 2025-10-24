@@ -54,7 +54,7 @@ exports.setApp = function (app, client)
         email: normalizedEmail,
         passwordHash,
         isVerified: false,
-        google: {},
+        google: { connected: false, accountId: null },
         createdAt: new Date(),
         updatedAt: new Date()
       };
