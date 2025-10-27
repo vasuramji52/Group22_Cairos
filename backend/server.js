@@ -33,10 +33,11 @@ app.get('/__ping', (_req, res) => res.json({ ok: true, where: 'server.js' }));
 // --- API routes ---
 const api = require('./api.js');
 const auth = require('./auth.js');  
+const me = require('./me.js');
 
 auth.setApp(app, client);
 api.setApp(app, client);
-
+me.setApp(app, client);
 
 // Optional healthcheck
 app.get('/api/ping', (_req, res) => res.json({ ok: true }));
