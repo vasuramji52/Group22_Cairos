@@ -1,56 +1,45 @@
 const bcrypt = require('bcryptjs');
 const jwtLib = require('./createJWT.js');
+const { ObjectId } = require('mongodb');
+const { sendMail } = require('./mail');
+const { issueToken, consumeToken, /*validateToken*/  } = require('./tokenStore');
+
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5000/api';
 
 exports.setApp = function (app, client) 
 {
-  app.get('/api/ping', (_req, res) => res.json({ ok: true }));
   const db = client.db('COP4331Cards');
 
-  /*app.get('/api/_db_probe', async (_req, res) => {
-  try {
-    const dbName = db.databaseName; // should be "COP4331Cards"
-    const colls = await db.listCollections().toArray();
-    const usersCol = db.collection('users');
-    const count = await usersCol.estimatedDocumentCount();
-    const sample = await usersCol.find({}, { projection: { email: 1 } }).limit(5).toArray();
+  // health check
+  app.get('/api/ping', (_req, res) => res.json({ ok: true }));
 
-    res.json({
-      connectedDb: dbName,
-      collections: colls.map(c => c.name),
-      usersCount: count,
-      sampleEmails: sample.map(d => d.email)
-    });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
-  }
-}); */
-
-//Register without email verification
+  //
+  // REGISTER (now sends verify email)
+  //
   app.post('/api/register', async (req, res) => 
   {
-    // input: firstName, lastName, email, password
-    // output: jwtToken or error
     try {
       const { firstName, lastName, email, password } = req.body;
 
-      //stuff missing
       if (!firstName || !lastName || !email || !password)
         return res.status(400).json({ error: 'missing_fields' });
 
       const normalizedEmail = email.toLowerCase().trim();
 
-      //email already exists
+      // does user already exist?
       const existingUser = await db.collection('users').findOne({ email: normalizedEmail });
-     
       if (existingUser)
         return res.status(409).json({ error: 'User already exists' });
 
+      // hash pw
       const passwordHash = await bcrypt.hash(password, 10);
 
-      const newUser = 
-      {
-        firstName: firstName,
-        lastName: lastName,
+      // create user with isVerified: false
+      const now = new Date();
+      const newUser = {
+        firstName,
+        lastName,
         email: normalizedEmail,
         passwordHash,
         isVerified: false,
@@ -60,25 +49,91 @@ exports.setApp = function (app, client)
       };
 
       const result = await db.collection('users').insertOne(newUser);
+      const userId = result.insertedId;
 
-      const token = jwtLib.createToken(firstName, lastName, result.insertedId);
-      res.status(200).json(token);
+      // make a verification token that expires in 15 minutes
+      const { raw: verifyToken } = await issueToken(db, { userId, type: 'verify', minutes: 15 });
+
+      // build magic link that hits our verify route
+      const link = `${BACKEND_BASE_URL}/verify-email-link?uid=${userId.toString()}&token=${verifyToken}`;
+
+      // send email
+      await sendMail({
+        to: normalizedEmail,
+        subject: 'Verify your email',
+        html: `
+          <p>Hi ${firstName},</p>
+          <p>Thanks for signing up. Please verify your email to activate your account:</p>
+          <p><a href="${link}">Click here to verify your email</a></p>
+          <p>This link expires in 15 minutes.</p>
+        `
+      });
+
+      // respond
+      return res.status(200).json({
+        ok: true,
+        message: 'Registered. Check your email to verify.'
+      });
     } 
     catch (e) 
     {
       console.error('Register error:', e);
-      res.status(500).json({ error: e.toString() });
+      return res.status(500).json({ error: e.toString() });
     }
   });
 
-  // login 
+  // VERIFY EMAIL LINK
+  //
+  app.get('/api/verify-email-link', async (req, res) => {
+    try {
+      const { uid, token } = req.query;
+
+      if (!uid || !token) {
+        return res.status(400).send('Missing uid or token');
+      }
+
+      // find user
+      const user = await db.collection('users').findOne({ _id: new ObjectId(uid) });
+      if (!user) return res.status(404).send('User not found');
+
+      // already verified -> just bounce them to frontend with verified=1
+      if (user.isVerified === true) {
+        return res.redirect(`${FRONTEND_BASE_URL}/?verified=1`);
+      }
+
+      // check token
+      const result = await consumeToken(db, {
+        userId: uid,
+        type: 'verify',
+        raw: token
+      });
+
+      if (!result.ok) {
+        return res.status(400).send('Verification failed or expired.');
+      }
+
+      // mark verified
+      await db.collection('users').updateOne(
+        { _id: user._id },
+        { $set: { isVerified: true, updatedAt: new Date() } }
+      );
+
+      // send them back to frontend
+      return res.redirect(`${FRONTEND_BASE_URL}/?verified=1`);
+    } catch (e) {
+      console.error('Verify link error:', e);
+      return res.status(500).send('Server error');
+    }
+  });
+
+  //
+  // LOGIN (mostly same, still blocks unverified)
+  //
   app.post('/api/login', async (req, res) => 
-    {
+  {
     console.log('Reached /api/login route');
-    // input: email, password
-    // output: jwt token or error
-    try 
-    {
+
+    try {
       const { email, password } = req.body;      
       const normalizedEmail = String(email).toLowerCase().trim();
 
@@ -89,21 +144,102 @@ exports.setApp = function (app, client)
       if (!user)
         return res.status(401).json({ error: 'Invalid email' });
 
-      if(!user.isVerified)
+      if (!user.isVerified)
         return res.status(401).json({ error: 'User email not verified' });
 
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid)
         return res.status(401).json({ error: 'Invalid password' });
 
-      //creates token
+      // issue session JWT
       const token = jwtLib.createToken(user.firstName, user.lastName, user._id);
-      res.status(200).json(token);
+
+      return res.status(200).json(token); // { accessToken: '...' }
     } 
     catch (e) 
     {
       console.error('Login error:', e);
-      res.status(500).json({ error: e.toString() });
+      return res.status(500).json({ error: e.toString() });
     }
   });
+
+  /*app.post('/api/request-password-reset', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'missing_email' });
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await db.collection('users').findOne({ email: normalizedEmail });
+
+    // Always respond 200 to avoid leaking existence
+    if (!user) return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
+
+    // Issue a 15-minute reset token
+    const { raw: resetToken } = await issueToken(db, { userId: user._id, type: 'reset', minutes: 15 });
+
+    const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}`;
+
+    await sendMail({
+      to: normalizedEmail,
+      subject: 'Reset your password',
+      html: `
+        <p>Hi ${user.firstName},</p>
+        <p>You requested to reset your password. Click below:</p>
+        <p><a href="${link}">Reset your password</a></p>
+        <p>This link expires in 15 minutes.</p>
+      `
+    });
+
+    return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
+  } catch (e) {
+    console.error('Request reset error:', e);
+    return res.status(500).json({ error: e.toString() });
+  }
+});
+
+app.get('/api/reset-password-link', async (req, res) => {
+  try {
+    const { uid, token } = req.query;
+    if (!uid || !token) return res.status(400).send('Missing uid or token');
+
+    // Optional: validate (but do NOT consume)
+    const ok = await validateToken(db, { userId: uid, type: 'reset', raw: token });
+    if (!ok.ok) return res.status(400).send('Reset link invalid or expired');
+
+    // Send them to your frontend page to enter a new password
+    return res.redirect(`${FRONTEND_BASE_URL}/reset-password?uid=${uid}&token=${token}`);
+  } catch (e) {
+    console.error('Reset link error:', e);
+    return res.status(500).send('Server error');
+  }
+});
+
+app.post('/api/confirm-reset-password', async (req, res) => {
+  try {
+    const { uid, token, newPassword } = req.body;
+    if (!uid || !token || !newPassword)
+      return res.status(400).json({ error: 'missing_fields' });
+
+    // Basic policy – adjust as needed
+    if (String(newPassword).length < 8)
+      return res.status(400).json({ error: 'weak_password' });
+
+    // Now CONSUME to prevent reuse
+    const result = await consumeToken(db, { userId: uid, type: 'reset', raw: token });
+    if (!result.ok) return res.status(400).json({ error: 'invalid_or_expired_token' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db.collection('users').updateOne(
+      { _id: new ObjectId(uid) },
+      { $set: { passwordHash, updatedAt: new Date() } }
+    );
+
+    return res.status(200).json({ ok: true, message: 'Password updated successfully.' });
+  } catch (e) {
+    console.error('Confirm reset error:', e);
+    return res.status(500).json({ error: e.toString() });
+  }
+});*/
+
 };
+
