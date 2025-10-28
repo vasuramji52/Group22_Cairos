@@ -41,12 +41,14 @@ async function start() {
     const api = require("./api.js");
     const auth = require("./auth.js");
     const me = require("./me.js");
+    const oauth = require('./oauth.google.js');
 
     auth.setApp(app, client);
     if (api.setApp) {
       api.setApp(app, client);
     }
     me.setApp(app, client);
+    oauth.setApp(app, client);
     // optional healthcheck
     app.get("/api/ping", (_req, res) => res.json({ ok: true }));
 
