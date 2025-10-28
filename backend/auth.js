@@ -5,7 +5,7 @@ const { sendMail } = require('./mail');
 const { issueToken, consumeToken, validateToken  } = require('./tokenStore');
 
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5001/api';
+const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5000/api';
 
 exports.setApp = function (app, client) 
 {
