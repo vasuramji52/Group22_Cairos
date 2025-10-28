@@ -1,97 +1,105 @@
-import React, { useState } from 'react';
-import { buildPath } from './path';
-import { storeToken } from '../tokenStorage';
-import { jwtDecode } from 'jwt-decode';
-
+import React, { useState } from "react";
+import { buildPath } from "./path";
+import { storeToken } from "../tokenStorage";
+import { jwtDecode } from "jwt-decode";
 
 interface DecodedToken {
-  iat: number;           // issued at
+  iat: number; // issued at
   firstName: string;
   lastName: string;
-  [key: string]: any;    // optional, in case there are other fields
+  [key: string]: any; // optional, in case there are other fields
 }
 
-function Login()
-{
+function Login() {
+  const [message, setMessage] = useState("");
+  const [loginName, setLoginName] = React.useState("");
+  const [loginPassword, setPassword] = React.useState("");
 
-  const [message,setMessage] = useState('');
-  const [loginName,setLoginName] = React.useState('');
-  const [loginPassword,setPassword] = React.useState('');
+  async function doLogin(event: any): Promise<void> {
+    event.preventDefault();
 
-    async function doLogin(event:any) : Promise<void>
-    {
-        event.preventDefault();
+    var obj = { email: loginName, password: loginPassword };
+    var js = JSON.stringify(obj);
 
-        var obj = {login:loginName,password:loginPassword};
-        var js = JSON.stringify(obj);
+    try {
+      const response = await fetch(buildPath("api/login"), {
+        method: "POST",
+        body: js,
+        headers: { "Content-Type": "application/json" },
+      });
 
-        try
-        {    
-            const response = await fetch(buildPath('api/login'),
-                {method:'POST',body:js,headers:{'Content-Type': 'application/json'}});
-  
-            var res = JSON.parse(await response.text());
-  
-        const { accessToken } = res;
-        storeToken( res );
+      const res = await response.json();
+      if (!response.ok) {
+        console.error("Login failed:", res.error);
+      }
 
-        const decoded = jwtDecode<DecodedToken>(accessToken);
+      const token = res.accessToken;
+      storeToken(token);
 
-        try
-        {
-          var ud = decoded;
-          var userId = ud.iat;
-          var firstName = ud.firstName;
-          var lastName = ud.lastName;
+      const decoded = jwtDecode<DecodedToken>(token);
 
-          if( userId <= 0 )
-          {
-            setMessage('User/Password combination incorrect');
-          }
-          else
-          {
-            var user = {firstName:firstName,lastName:lastName,id:userId}
-            localStorage.setItem('user_data', JSON.stringify(user));
-      
-            setMessage('');
-            window.location.href = '/cards';
-          }
-          }
-          catch(e)
-          {
-            console.log( e );
-            return;
-          }
+      try {
+        var ud = decoded;
+        var userId = ud.iat;
+        var firstName = ud.firstName;
+        var lastName = ud.lastName;
+
+        if (userId <= 0) {
+          setMessage("User/Password combination incorrect");
+        } else {
+          var user = { firstName: firstName, lastName: lastName, id: userId };
+          localStorage.setItem("user_data", JSON.stringify(user));
+
+          setMessage("");
+          window.location.href = "/cards";
         }
-        catch(error:any)
-        {
-            alert(error.toString());
-            return;
-        }    
-      };
-
-    function handleSetLoginName( e: any ) : void
-    {
-      setLoginName( e.target.value );
+      } catch (e) {
+        console.log(e);
+        return;
+      }
+    } catch (error: any) {
+      alert(error.toString());
+      return;
     }
+  }
 
-    function handleSetPassword( e: any ) : void
-    {
-      setPassword( e.target.value );
-    }
+  function handleSetLoginName(e: any): void {
+    setLoginName(e.target.value);
+  }
 
-    return(
-      <div id="loginDiv">
-        <span id="inner-title">PLEASE LOG IN</span><br />
-        Login: <input type="text" id="loginName" placeholder="Username" 
-          onChange={handleSetLoginName} /><br />
-        Password: <input type="password" id="loginPassword" placeholder="Password" 
-          onChange={handleSetPassword} />
-        <input type="submit" id="loginButton" className="buttons" value = "Do It"
-          onClick={doLogin} />
-        <span id="loginResult">{message}</span>
-     </div>
-    );
-};
+  function handleSetPassword(e: any): void {
+    setPassword(e.target.value);
+  }
+
+  return (
+    <div id="loginDiv">
+      <span id="inner-title">PLEASE LOG IN</span>
+      <br />
+      Login:{" "}
+      <input
+        type="text"
+        id="loginName"
+        placeholder="Username"
+        onChange={handleSetLoginName}
+      />
+      <br />
+      Password:{" "}
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Password"
+        onChange={handleSetPassword}
+      />
+      <input
+        type="submit"
+        id="loginButton"
+        className="buttons"
+        value="Do It"
+        onClick={doLogin}
+      />
+      <span id="loginResult">{message}</span>
+    </div>
+  );
+}
 
 export default Login;
