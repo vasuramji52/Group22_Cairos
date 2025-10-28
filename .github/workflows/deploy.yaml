@@ -1,0 +1,63 @@
+name: Deploy MERN (main)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install sshpass (password-based SSH)
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy to Droplet
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }} # this is your SSH PASSWORD
+        run: |
+          set -e
+          sshpass -p "$SSH_KEY" ssh -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
+          set -e
+
+          echo "🚀 Deploying..."
+
+          ############################
+          # FRONTEND (Vite React)
+          # Repo path on server: /var/cardsServer/api/frontend
+          ############################
+          cd /var/cardsServer/api/frontend
+
+          echo "📦 Sync to latest main"
+          git fetch origin
+          git reset --hard origin/main
+
+          echo "⚙️ Build"
+          npm ci
+          npm run build
+
+          echo "🧭 Reload Nginx (root points to dist)"
+          sudo nginx -t && sudo systemctl reload nginx
+
+          ############################
+          # BACKEND (Node/Express)
+          # Repo path on server: /var/cardsServer/api/backend
+          ############################
+          cd /var/cardsServer/api/backend
+
+          echo "🔄 Update backend to latest main"
+          git fetch origin
+          git reset --hard origin/main
+          npm ci
+
+          echo "▶️ Restart API"
+          pm2 restart express-server || pm2 start server.js --name "express-server"
+          pm2 save
+
+          echo "✅ Done."
+          EOF
