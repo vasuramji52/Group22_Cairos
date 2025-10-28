@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Navigate, Routes } from 'react-router-d
 import './App.css';
 import LoginPage from './pages/LoginPage';
 import CardPage from './pages/CardPage';
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/cards" element={<CardPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   );

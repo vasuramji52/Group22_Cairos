@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwtLib = require('./createJWT.js');
 const { ObjectId } = require('mongodb');
 const { sendMail } = require('./mail');
-const { issueToken, consumeToken, /*validateToken*/  } = require('./tokenStore');
+const { issueToken, consumeToken, validateToken  } = require('./tokenStore');
 
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5000/api';
@@ -163,7 +163,7 @@ exports.setApp = function (app, client)
     }
   });
 
-  /*app.post('/api/request-password-reset', async (req, res) => {
+  app.post('/api/request-password-reset', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'missing_email' });
@@ -171,10 +171,10 @@ exports.setApp = function (app, client)
     const normalizedEmail = email.toLowerCase().trim();
     const user = await db.collection('users').findOne({ email: normalizedEmail });
 
-    // Always respond 200 to avoid leaking existence
+    // always respond 200 to avoid leaking existence
     if (!user) return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
 
-    // Issue a 15-minute reset token
+    // issue a 15-minute reset token
     const { raw: resetToken } = await issueToken(db, { userId: user._id, type: 'reset', minutes: 15 });
 
     const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}`;
@@ -202,7 +202,7 @@ app.get('/api/reset-password-link', async (req, res) => {
     const { uid, token } = req.query;
     if (!uid || !token) return res.status(400).send('Missing uid or token');
 
-    // Optional: validate (but do NOT consume)
+
     const ok = await validateToken(db, { userId: uid, type: 'reset', raw: token });
     if (!ok.ok) return res.status(400).send('Reset link invalid or expired');
 
@@ -224,7 +224,7 @@ app.post('/api/confirm-reset-password', async (req, res) => {
     if (String(newPassword).length < 8)
       return res.status(400).json({ error: 'weak_password' });
 
-    // Now CONSUME to prevent reuse
+    // Now consume to prevent reuse
     const result = await consumeToken(db, { userId: uid, type: 'reset', raw: token });
     if (!result.ok) return res.status(400).json({ error: 'invalid_or_expired_token' });
 
@@ -239,7 +239,38 @@ app.post('/api/confirm-reset-password', async (req, res) => {
     console.error('Confirm reset error:', e);
     return res.status(500).json({ error: e.toString() });
   }
-});*/
+});
+
+/*app.post('/api/dev-reset-link', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'missing_email' });
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await db.collection('users').findOne({ email: normalizedEmail });
+    if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+    // issue a reset token for THIS user
+    const { raw } = await issueToken(db, {
+      userId: user._id,
+      type: 'reset',
+      minutes: 15
+    });
+
+    const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${raw}`;
+
+    return res.status(200).json({
+      ok: true,
+      uid: user._id.toString(),
+      token: raw,
+      link
+    });
+  } catch (e) {
+    console.error('dev-reset-link error:', e);
+    return res.status(500).json({ error: e.toString() });
+  }
+}); */
+
 
 };
 
