@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import { buildPath } from "./path";
 import { storeToken } from "../tokenStorage";
 import { jwtDecode } from "jwt-decode";
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import './ui/Login.css';
+import './ui/index.css';
 
 interface DecodedToken {
   iat: number; // issued at
@@ -103,139 +108,104 @@ function Login() {
   }
 
   return (
-    <div id="loginDiv">
-      <span id="inner-title">PLEASE LOG IN</span>
-      <br />
-      Login:{" "}
-      <input
-        type="text"
-        id="loginName"
-        placeholder="Username"
-        onChange={handleSetLoginName}
-      />
-      <br />
-      Password:{" "}
-      <input
-        type="password"
-        id="loginPassword"
-        placeholder="Password"
-        onChange={handleSetPassword}
-      />
-      <input
-        type="submit"
-        id="loginButton"
-        className="buttons"
-        value="Do It"
-        onClick={doLogin}
-      />
-      <span id="loginResult">{message}</span>
 
-      {/* Forgot password link */}
-      {!showReset && (
-        <button
-          type="button"
-          onClick={() => {
-            setShowReset(true);
-            setResetStatus("");
-          }}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#1e40af",
-            textDecoration: "underline",
-            fontSize: "0.9rem",
-            cursor: "pointer",
-            padding: 0,
-            marginTop: "0.75rem",
-            display: "block",
-          }}
-        >
-          Forgot password?
-        </button>
-      )}
+    <div className="relative z-10">
+      <div className="mb-6 text-center">
+        <h2 className="text-[#1B4B5A] text-2xl mb-2">Welcome Back</h2>
+        <p className="text-[#1B4B5A]/70">Log in to seize your kairos</p>
+      </div>
 
-      {/* Reset password box */}
+      {/* Core login form */}
+      <form onSubmit={doLogin} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="loginName" className="text-[#1B4B5A]">
+            Email
+          </Label>
+          <Input
+            id="loginName"
+            type="text"
+            placeholder="cleopatra@cairos.com"
+            value={loginName}
+            onChange={handleSetLoginName}
+            className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] placeholder:text-[#1B4B5A]/40"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="loginPassword" className="text-[#1B4B5A]">
+            Password
+          </Label>
+          <Input
+            id="loginPassword"
+            type="password"
+            placeholder="Enter your password"
+            value={loginPassword}
+            onChange={handleSetPassword}
+            className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] placeholder:text-[#1B4B5A]/40"
+            required
+          />
+        </div>
+
+          {/* Forgot Password */}
+          {!showReset && (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                className="text-sm text-[#1B4B5A]/80 hover:text-[#1B4B5A] underline"
+                onClick={() => {
+                  setShowReset(true);
+                  setResetStatus("");
+                }}
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+        <Button type="submit" className="w-full bg-[#2C6E7E] hover:bg-[#1B4B5A] text-[#FFD700]">
+          Log In
+        </Button>
+        <span className="block text-center text-[#1B4B5A]/80 text-sm">{message}</span>
+      </form>
+
+      <div className="mt-6 pt-6 border-t border-[#C5A572]/30 text-center">
+        <p className="text-sm text-[#1B4B5A]/80">
+          Don't have an account?{' '}
+          <button className="text-[#2C6E7E] hover:text-[#1B4B5A] underline">
+            Sign up
+          </button>
+        </p>
+      </div>
+
+      {/* Reset Password Modal */}
       {showReset && (
-        <div
-          style={{
-            marginTop: "1rem",
-            padding: "0.75rem",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            maxWidth: "300px",
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>
-            Reset Password
-          </div>
-
-          <div style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}>
+        <div className="mt-6 p-4 border border-[#C5A572]/40 rounded-lg bg-white/70">
+          <h3 className="text-[#1B4B5A] font-semibold mb-2">Reset Password</h3>
+          <p className="text-[#1B4B5A]/70 text-sm mb-2">
             Enter your email. We’ll send a reset link if your account exists.
-          </div>
-
-          <input
+          </p>
+          <Input
             type="email"
             placeholder="you@email.com"
             value={resetEmail}
             onChange={(e) => setResetEmail(e.target.value)}
-            style={{
-              width: "100%",
-              marginBottom: "0.5rem",
-              padding: "0.4rem",
-              borderRadius: "4px",
-              border: "1px solid #aaa",
-            }}
+            className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] mb-2"
           />
-
-          <button
-            onClick={handleRequestReset} // ✅ wire it up
-            style={{
-              width: "100%",
-              padding: "0.5rem",
-              borderRadius: "4px",
-              border: "none",
-              backgroundColor: "#0f172a",
-              color: "white",
-              fontWeight: 500,
-              cursor: "pointer",
-              marginBottom: "0.5rem",
-            }}
-          >
+          <Button onClick={handleRequestReset} className="w-full bg-[#2C6E7E] hover:bg-[#1B4B5A] text-[#FFD700] mb-2">
             Send reset link
-          </button>
-
-          <div
-            style={{
-              fontSize: "0.8rem",
-              minHeight: "1rem",
-              color: "#111827",
-              wordBreak: "break-word",
-            }}
-          >
-            {resetStatus}
-          </div>
-
+          </Button>
+          <p className="text-sm text-[#1B4B5A]/80">{resetStatus}</p>
           <button
             type="button"
-            style={{
-              background: "none",
-              border: "none",
-              color: "#555",
-              fontSize: "0.8rem",
-              textDecoration: "underline",
-              cursor: "pointer",
-              padding: 0,
-              marginTop: "0.5rem",
-            }}
-            onClick={() => {
-              setShowReset(false);
-            }}
+            className="text-xs text-[#1B4B5A]/70 underline mt-2"
+            onClick={() => setShowReset(false)}
           >
             Back to login
           </button>
         </div>
       )}
-    </div>
+     </div>
   );
 }
 
