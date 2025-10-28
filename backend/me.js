@@ -6,7 +6,7 @@ exports.setApp = function setApp(app, client) {
   const db = client.db('COP4331Cards');
 
   // GET /me - dashboard data
-  app.get('/me', requireAuth, async (req, res) => {
+  app.get('/api/me', requireAuth, async (req, res) => {
     try {
       const user = await db.collection('users').findOne(
         { _id: new ObjectId(req.userId) },
