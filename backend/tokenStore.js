@@ -46,7 +46,7 @@ async function issueToken(db, { userId, type = 'verify', minutes = 15 }) {
   return { raw, expiresAt };
 }
 
-/*async function validateToken(db, { userId, type = 'reset', raw }) {
+  async function validateToken(db, { userId, type = 'reset', raw }) {
   const tokenHash = sha256(raw);
   const doc = await db.collection('tokens').findOne({
     userId: new ObjectId(userId),
@@ -57,7 +57,7 @@ async function issueToken(db, { userId, type = 'verify', minutes = 15 }) {
   if (new Date() > new Date(doc.expiresAt)) return { ok: false, error: 'expired' };
   if (doc.tokenHash !== tokenHash) return { ok: false, error: 'mismatch' };
   return { ok: true };
-}*/
+}
 
 // check and consume the token
 async function consumeToken(db, { userId, type = 'verify', raw }) {
@@ -85,5 +85,5 @@ module.exports = {
   ensureIndexes,
   issueToken,
   consumeToken,
-  //validateToken
+  validateToken
 };
