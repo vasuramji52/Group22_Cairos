@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { buildPath } from "./path";
 import { storeToken } from "../tokenStorage";
 import { jwtDecode } from "jwt-decode";
@@ -17,18 +18,16 @@ interface DecodedToken {
 
 function Login() {
   const [message, setMessage] = useState("");
-  const [loginName, setLoginName] = React.useState("");
-  const [loginPassword, setPassword] = React.useState("");
+  const [loginName, setLoginName] = useState("");
+  const [loginPassword, setPassword] = useState("");
 
-  const [showReset, setShowReset] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetStatus, setResetStatus] = useState("");
+  const navigate = useNavigate();
 
   async function doLogin(event: any): Promise<void> {
     event.preventDefault();
 
-    var obj = { email: loginName, password: loginPassword };
-    var js = JSON.stringify(obj);
+    const obj = { email: loginName, password: loginPassword };
+    const js = JSON.stringify(obj);
 
     try {
       const response = await fetch(buildPath("api/login"), {
@@ -38,8 +37,10 @@ function Login() {
       });
 
       const res = await response.json();
-      if (!response.ok) {
+      if (!response.ok || !res.accessToken) {
         console.error("Login failed:", res.error);
+        setMessage(res.error || "User/Password combination incorrect");
+        return;
       }
 
       const token = res.accessToken;
@@ -50,8 +51,8 @@ function Login() {
       try {
         var ud = decoded;
         var userId = ud.iat;
-        var firstName = ud.firstName;
-        var lastName = ud.lastName;
+        const firstName = ud.firstName;
+        const lastName = ud.lastName;
 
         if (userId <= 0) {
           setMessage("User/Password combination incorrect");
@@ -78,33 +79,6 @@ function Login() {
 
   function handleSetPassword(e: any): void {
     setPassword(e.target.value);
-  }
-
-  async function handleRequestReset(e: any) {
-    e.preventDefault();
-    setResetStatus("Sending...");
-
-    try {
-      const resp = await fetch(buildPath("api/request-password-reset"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resetEmail }),
-      });
-
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        setResetStatus("Error requesting reset.");
-      } else {
-        // backend sends generic message
-        setResetStatus(
-          data.message || "If that email exists, a link was sent."
-        );
-      }
-    } catch (err) {
-      console.error("reset request failed", err);
-      setResetStatus("Network error.");
-    }
   }
 
   return (
@@ -148,20 +122,15 @@ function Login() {
         </div>
 
           {/* Forgot Password */}
-          {!showReset && (
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                className="text-sm text-[#1B4B5A]/80 hover:text-[#1B4B5A] underline"
-                onClick={() => {
-                  setShowReset(true);
-                  setResetStatus("");
-                }}
-              >
-                Forgot password?
-              </button>
-            </div>
-          )}
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            className="text-sm text-[#1B4B5A]/80 hover:text-[#1B4B5A] underline"
+            onClick={() => navigate('/forgot-password')}
+          >
+            Forgot password?
+          </button>
+        </div>
 
         <Button type="submit" className="w-full bg-[#2C6E7E] hover:bg-[#1B4B5A] text-[#FFD700]">
           Log In
@@ -172,39 +141,15 @@ function Login() {
       <div className="mt-6 pt-6 border-t border-[#C5A572]/30 text-center">
         <p className="text-sm text-[#1B4B5A]/80">
           Don't have an account?{' '}
-          <button className="text-[#2C6E7E] hover:text-[#1B4B5A] underline">
+          <button
+            type="button"
+            className="text-[#2C6E7E] hover:text-[#1B4B5A] underline"
+            onClick={() => navigate('/register')}
+          >
             Sign up
           </button>
         </p>
       </div>
-
-      {/* Reset Password Modal */}
-      {showReset && (
-        <div className="mt-6 p-4 border border-[#C5A572]/40 rounded-lg bg-white/70">
-          <h3 className="text-[#1B4B5A] font-semibold mb-2">Reset Password</h3>
-          <p className="text-[#1B4B5A]/70 text-sm mb-2">
-            Enter your email. We’ll send a reset link if your account exists.
-          </p>
-          <Input
-            type="email"
-            placeholder="you@email.com"
-            value={resetEmail}
-            onChange={(e) => setResetEmail(e.target.value)}
-            className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] mb-2"
-          />
-          <Button onClick={handleRequestReset} className="w-full bg-[#2C6E7E] hover:bg-[#1B4B5A] text-[#FFD700] mb-2">
-            Send reset link
-          </Button>
-          <p className="text-sm text-[#1B4B5A]/80">{resetStatus}</p>
-          <button
-            type="button"
-            className="text-xs text-[#1B4B5A]/70 underline mt-2"
-            onClick={() => setShowReset(false)}
-          >
-            Back to login
-          </button>
-        </div>
-      )}
      </div>
   );
 }
