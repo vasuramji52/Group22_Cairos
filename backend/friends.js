@@ -1,25 +1,31 @@
 const { ObjectId } = require('mongodb');
+const { requireAuth } = require('./auth.middleware');
 
 require('mongodb');
 require('express');
 
 exports.setApp = function(app, client){
     const users = client.db('COP4331Cards').collection('users');
-    app.post('/api/addfriend', async(req, res, next) => {
+    app.post('/api/addfriend', requireAuth, async(req, res, next) => {
         // incoming: userId
-        const {userId, friendId} = req.body;
+        const {friendEmail} = req.body;
+        // const {friendId} = req.body;
+        const userId = req.userId;
         let error ='';
 
         try{
-            if(!userId || !friendId){
-                return res.status(400).json({ error: 'Missing userId or friendId field.'})
+            if(!userId || !friendEmail){
+                return res.status(400).json({ error: 'Missing userId or friendEmail field.'})
             }
             const userObjectId = new ObjectId(userId);
-            const friendObjectId = new ObjectId(friendId);
+            // const friendObjectId = new ObjectId(friendId);
+            // const friendEmailId = new friendEmail;
 
             // first check if both users exist
             const user = await users.findOne({_id: userObjectId });
-            const friend = await users.findOne({ _id: friendObjectId});
+            // const friend = await users.findOne({ _id: friendObjectId});
+            // const friendEmail = await users.findOne({email: friendEmailId});
+            const friend = await users.findOne({email: friendEmail});
 
             // handle the case where one is not found
             if(!user || !friend){
@@ -33,12 +39,12 @@ exports.setApp = function(app, client){
             // add friend to current user's list
             await users.updateOne(
                 {_id: userObjectId},
-                { $addToSet: { friends: friendObjectId }}
+                { $addToSet: { friends: friend._id }}
             );
 
             // add user to friend's list
             await users.updateOne(
-                {_id: friendObjectId},
+                {_id: friend._id},
                 {$addToSet: { friends: userObjectId }}
             );
             res.status(200).json({ message: 'Friend added successfully' });
@@ -49,20 +55,21 @@ exports.setApp = function(app, client){
         }
     });
 
-    app.post("/api/removefriend", async (req, res, next) => {
-        const {userId, friendId} = req.body;
+    app.post("/api/removefriend", requireAuth, async (req, res, next) => {
+        const {friendEmail} = req.body;
+        const userId = req.userId;
         let error ='';
 
         try{
-            if(!userId || !friendId){
+            if(!userId || !friendEmail){
                 return res.status(400).json({ error: 'Missing userId or friendId field.'})
             }
             const userObjectId = new ObjectId(userId);
-            const friendObjectId = new ObjectId(friendId);
+            // const friendObjectId = new ObjectId(friendId);
 
             // first check if both users exist
             const user = await users.findOne({_id: userObjectId });
-            const friend = await users.findOne({ _id: friendObjectId});
+            const friend = await users.findOne({ email: friendEmail});
 
             // handle the case where one is not found
             if(!user || !friend){
@@ -72,12 +79,12 @@ exports.setApp = function(app, client){
             // remove friend from user's friend array
             await users.updateOne(
                 {_id: userObjectId},
-                { $pull: { friends: friendObjectId }}
+                { $pull: { friends: friend._id }}
             );
 
             // remove user from friend's friend array
             await users.updateOne(
-                {_id: friendObjectId},
+                {_id: friend._id},
                 {$pull: { friends: userObjectId }}
             );
             res.status(200).json({ message: 'Friend removed successfully' });
@@ -88,8 +95,8 @@ exports.setApp = function(app, client){
         }
     });
     
-    app.get('/api/getfriends', async(req, res, next) => {
-        const {userId} = req.body;
+    app.get('/api/getfriends', requireAuth, async(req, res, next) => {
+        const userId = req.userId;
         let error = '';
 
         try{
