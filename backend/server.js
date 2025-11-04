@@ -42,6 +42,7 @@ async function start() {
     const auth = require("./auth.js");
     const me = require("./me.js");
     const oauth = require('./oauth.google.js');
+    const friend = require('./friends.js')
 
     auth.setApp(app, client);
     if (api.setApp) {
@@ -49,6 +50,7 @@ async function start() {
     }
     me.setApp(app, client);
     oauth.setApp(app, client);
+    friend.setApp(app, client);
     // optional healthcheck
     app.get("/api/ping", (_req, res) => res.json({ ok: true }));
 
