@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwtLib = require('./createJWT.js');
 const { ObjectId } = require('mongodb');
 const { sendMail } = require('./mail');
-const { issueToken, consumeToken, validateToken  } = require('./tokenStore');
+const { issueToken, consumeToken } = require('./tokenStore');
 
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
 const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5000/api';
@@ -43,9 +43,9 @@ exports.setApp = function (app, client)
         email: normalizedEmail,
         passwordHash,
         isVerified: false,
-        google: { connected: false, accountId: null },
-        createdAt: new Date(),
-        updatedAt: new Date()
+        google: {},
+        createdAt: now,
+        updatedAt: now
       };
 
       const result = await db.collection('users').insertOne(newUser);
@@ -82,6 +82,7 @@ exports.setApp = function (app, client)
     }
   });
 
+  //
   // VERIFY EMAIL LINK
   //
   app.get('/api/verify-email-link', async (req, res) => {
