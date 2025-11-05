@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-toast": "^1.2.15",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "axios": "^1.13.2",
+    "react-hot-toast": "^2.6.0"
+  }
+}
