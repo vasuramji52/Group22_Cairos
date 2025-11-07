@@ -4,6 +4,7 @@ import '../theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'auth_page_layout.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
@@ -96,6 +97,19 @@ class _LoginScreenState extends State<LoginScreen> {
               minimumSize: const Size(double.infinity, 48),
             ),
             child: const Text('Log In'),
+          ),
+
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+              );
+            },
+            child: const Text(
+              'Forgot Password?',
+              style: TextStyle(color: AppColors.accentTeal),
+            ),
           ),
 
           TextButton(
