@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { User, Mail, Globe, LogOut, Save } from "lucide-react";
+import { useState } from "react";
+import { User, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { EgyptianBorder, PapyrusCard, AnkhIcon } from "./egyptian-decorations";
-import { getMe, updateProfile, logout, type User as UserType } from "../lib/mock-api";
+import { getMe, type User as UserType } from "../lib/mock-api";
 //import { toast } from "sonner@2.0.3";
 
 interface ProfileSettingsProps {
@@ -24,71 +22,13 @@ interface ProfileSettingsProps {
 
 export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
   const [user, setUser] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    timezone: "",
-  });
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  async function loadUser() {
-    try {
-      const userData = await getMe();
-      setUser(userData);
-      setFormData({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        timezone: userData.timezone,
-      });
-    } catch (error) {
-      console.error("Failed to load user:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const updated = await updateProfile(formData);
-      setUser(updated);
-      //toast.success("Profile updated successfully!");
-    } catch (error) {
-      //toast.error("Failed to update profile");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-    function doLogout(event: any): void {
-        event.preventDefault();
-        localStorage.removeItem('user_data');
-        window.location.href = '/';
-    };
-
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E]">
-        <div className="text-[#D4AF37]">Loading...</div>
-      </div>
-    );
-  }
-
-  const hasChanges =
-    user &&
-    (formData.firstName !== user.firstName ||
-      formData.lastName !== user.lastName ||
-      formData.email !== user.email ||
-      formData.timezone !== user.timezone);
+  function doLogout(event: any): void {
+      event.preventDefault();
+      localStorage.removeItem('user_data');
+      window.location.href = '/';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -104,82 +44,6 @@ export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
           </div>
           <EgyptianBorder className="my-4" />
         </div>
-
-        {/* Profile Information */}
-        <PapyrusCard className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
-              <User className="w-5 h-5" />
-              Personal Information
-            </CardTitle>
-            <CardDescription className="text-[#2C6E7E]">
-              Update your personal details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-[#1B4B5A]">
-                  First Name
-                </Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="bg-white border-[#D4AF37]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-[#1B4B5A]">
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="bg-white border-[#D4AF37]"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#1B4B5A] flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email Address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-white border-[#D4AF37]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timezone" className="text-[#1B4B5A] flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                Timezone
-              </Label>
-              <Input
-                id="timezone"
-                value={formData.timezone}
-                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                className="bg-white border-[#D4AF37]"
-                placeholder="America/New_York"
-              />
-              <p className="text-[#C5A572]">
-                Your current timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
-              </p>
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </CardContent>
-        </PapyrusCard>
 
         {/* Connected Accounts */}
         <PapyrusCard className="mb-6">

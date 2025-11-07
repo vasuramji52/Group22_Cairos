@@ -15,7 +15,7 @@ import { ScheduleCombine } from "./dashboard_components/schedule-combine";
 import { ProfileSettings } from "./dashboard_components/profile-settings";
 import { SundialIcon } from "./dashboard_components/egyptian-decorations";
 import { Toaster } from "./ui/sonner";
-import './ui/index2.css';
+import './ui/dashboard.css';
 
 type View = "dashboard" | "friends" | "schedule" | "settings";
 
