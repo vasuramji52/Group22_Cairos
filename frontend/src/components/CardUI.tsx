@@ -19,8 +19,6 @@ import { SundialIcon } from "./dashboard_components/egyptian-decorations";
 import { Toaster } from "./ui/sonner";
 import './ui/dashboard.css';
 
-//type View = "dashboard" | "friends" | "schedule" | "settings";
-
 function CardUI()
 {
     const navigate = useNavigate();
@@ -131,96 +129,100 @@ function CardUI()
     return (
     <div className="flex min-h-screen bg-[#1B4B5A]">
       {/* Sidebar */}
-      <aside className="w-64 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34] border-r-2 border-[#D4AF37]/30 flex flex-col">
-        {/* Logo/Brand */}
-        <div className="p-6 border-b border-[#D4AF37]/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center">
-              <SundialIcon className="w-6 h-6 text-[#1B4B5A]" />
-            </div>
-            <div>
-              <h2 className="text-[#D4AF37] tracking-wider">
-                CAIROS
-              </h2>
-              <p className="text-[#C5A572] text-xs">
-                Find your moment
-              </p>
-            </div>
-          </div>
+      <aside className="relative w-64 border-r-2 border-[#D4AF37]/30 flex flex-col overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34]">
+          <div
+            className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat pointer-events-none"
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1738512164098-9487d6d501e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoaWVyb2dseXBoaWNzJTIwZWd5cHRpYW4lMjBzeW1ib2xzfGVufDF8fHx8MTc2MTY2MDQ2Nnww&ixlib=rb-4.1.0&q=80&w=1080')`,
+            }}
+          />
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-            <Link
-            to="/cards/dashboard"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentPath === "/cards/dashboard"
-                ? "bg-[#D4AF37] text-[#1B4B5A]"
-                : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-            }`}
-          >
-            <Home className="w-5 h-5" />
-            <span>Dashboard</span>
-          </Link>
-
-          <Link
-            to="/cards/friends"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentPath === "/cards/friends"
-                ? "bg-[#D4AF37] text-[#1B4B5A]"
-                : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            <span>Your Circle</span>
-          </Link>
-
-          <Link
-            to="/cards/schedule"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentPath === "/cards/schedule"
-                ? "bg-[#D4AF37] text-[#1B4B5A]"
-                : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-            }`}
-          >
-            <Calendar className="w-5 h-5" />
-            <span>Find Time</span>
-          </Link>
-
-          <Link
-            to="/cards/settings"
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentPath === "/cards/settings"
-                ? "bg-[#D4AF37] text-[#1B4B5A]"
-                : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-            }`}
-          >
-            <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </Link>
-
-        </nav>
-
-        {/* Footer - Egyptian motif */}
-        <div className="p-6 border-t border-[#D4AF37]/30">
-          <div className="flex items-center justify-center gap-2 text-[#D4AF37] opacity-50">
-            <Sun className="w-4 h-4" />
-            <div className="flex gap-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 h-1 rounded-full bg-[#D4AF37]"
-                />
-              ))}
+        
+        {/* Sidebar content */}
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Logo/Brand */}
+          <div className="p-6 border-b border-[#D4AF37]/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center">
+                <SundialIcon className="w-6 h-6 text-[#1B4B5A]" />
+              </div>
+              <div>
+                <h2 className="text-[#D4AF37] tracking-wider">CAIROS</h2>
+                <p className="text-[#C5A572] text-xs">Find your moment</p>
+              </div>
             </div>
-            <Sun className="w-4 h-4" />
           </div>
-          <p className="text-center text-[#C5A572] mt-2 text-xs">
-            Like the Nile flows eternal
-          </p>
+        
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            <Link
+              to="/cards/dashboard"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                currentPath === "/cards/dashboard"
+                  ? "bg-[#D4AF37] text-[#1B4B5A]"
+                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+              }`}
+            >
+              <Home className="w-5 h-5" />
+              <span>Dashboard</span>
+            </Link>
+            
+            <Link
+              to="/cards/friends"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                currentPath === "/cards/friends"
+                  ? "bg-[#D4AF37] text-[#1B4B5A]"
+                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span>Your Circle</span>
+            </Link>
+            
+            <Link
+              to="/cards/schedule"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                currentPath === "/cards/schedule"
+                  ? "bg-[#D4AF37] text-[#1B4B5A]"
+                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+              }`}
+            >
+              <Calendar className="w-5 h-5" />
+              <span>Find Time</span>
+            </Link>
+            
+            <Link
+              to="/cards/settings"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                currentPath === "/cards/settings"
+                  ? "bg-[#D4AF37] text-[#1B4B5A]"
+                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span>Settings</span>
+            </Link>
+          </nav>
+            
+          {/* Footer - Egyptian motif */}
+          <div className="p-6 border-t border-[#D4AF37]/30">
+            <div className="flex items-center justify-center gap-2 text-[#D4AF37] opacity-50">
+              <Sun className="w-4 h-4" />
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-1 h-1 rounded-full bg-[#D4AF37]" />
+                ))}
+              </div>
+              <Sun className="w-4 h-4" />
+            </div>
+            <p className="text-center text-[#C5A572] mt-2 text-xs">
+              Like the Nile flows eternal
+            </p>
+          </div>
         </div>
       </aside>
-
+            
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <Routes>
@@ -232,7 +234,7 @@ function CardUI()
           <Route path="*" element={<Dashboard onNavigate={navigate} />} />
         </Routes>
       </main>
-
+            
       {/* Toast notifications */}
       <Toaster
         position="bottom-right"
@@ -245,6 +247,7 @@ function CardUI()
         }}
       />
     </div>
+
   );
 }
 

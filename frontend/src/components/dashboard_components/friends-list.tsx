@@ -124,7 +124,7 @@ export function FriendsList() {
               placeholder="Search friends..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-[#F5E6D3] border-[#D4AF37] focus:ring-[#D4AF37] text-[#1B4B5A]"
+              className="pl-10 bg-white border-[#D4AF37] focus:ring-[#D4AF37] text-[#1B4B5A]"
             />
           </div>
         </div>
