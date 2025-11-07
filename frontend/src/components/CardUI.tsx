@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { buildPath } from './path';
 import { retrieveToken, storeToken } from '../tokenStorage';
+import { useEffect } from "react";
+import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -17,18 +19,27 @@ import { SundialIcon } from "./dashboard_components/egyptian-decorations";
 import { Toaster } from "./ui/sonner";
 import './ui/dashboard.css';
 
-type View = "dashboard" | "friends" | "schedule" | "settings";
+//type View = "dashboard" | "friends" | "schedule" | "settings";
 
 function CardUI()
 {
-    const [currentView, setCurrentView] = useState<View>("dashboard");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      const userData = localStorage.getItem("user_data");
+      if (!userData) {
+        // if no user, redirect to login
+        navigate("/");
+      }
+    }, [navigate]);
 
     function doLogout(event?: any): void {
         event?.preventDefault();
         localStorage.removeItem('user_data');
-        window.location.href = '/';
+        navigate("/");
     };
 
+    const currentPath = location.pathname;
     /*const [message,setMessage] = useState('');
     const [searchResults,setResults] = useState('');
     const [cardList,setCardList] = useState('');
@@ -140,53 +151,54 @@ function CardUI()
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
-          <button
-            onClick={() => setCurrentView("dashboard")}
+            <Link
+            to="/cards/dashboard"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentView === "dashboard"
+              currentPath === "/cards/dashboard"
                 ? "bg-[#D4AF37] text-[#1B4B5A]"
                 : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
             }`}
           >
             <Home className="w-5 h-5" />
             <span>Dashboard</span>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => setCurrentView("friends")}
+          <Link
+            to="/cards/friends"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentView === "friends"
+              currentPath === "/cards/friends"
                 ? "bg-[#D4AF37] text-[#1B4B5A]"
                 : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
             }`}
           >
             <Users className="w-5 h-5" />
             <span>Your Circle</span>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => setCurrentView("schedule")}
+          <Link
+            to="/cards/schedule"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentView === "schedule"
+              currentPath === "/cards/schedule"
                 ? "bg-[#D4AF37] text-[#1B4B5A]"
                 : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
             }`}
           >
             <Calendar className="w-5 h-5" />
             <span>Find Time</span>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => setCurrentView("settings")}
+          <Link
+            to="/cards/settings"
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              currentView === "settings"
+              currentPath === "/cards/settings"
                 ? "bg-[#D4AF37] text-[#1B4B5A]"
                 : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
             }`}
           >
             <Settings className="w-5 h-5" />
             <span>Settings</span>
-          </button>
+          </Link>
+
         </nav>
 
         {/* Footer - Egyptian motif */}
@@ -211,14 +223,14 @@ function CardUI()
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {currentView === "dashboard" && (
-          <Dashboard onNavigate={setCurrentView} />
-        )}
-        {currentView === "friends" && <FriendsList />}
-        {currentView === "schedule" && <ScheduleCombine />}
-        {currentView === "settings" && (
-          <ProfileSettings onLogout={doLogout} />
-        )}
+        <Routes>
+          <Route path="dashboard" element={<Dashboard onNavigate={navigate} />} />
+          <Route path="friends" element={<FriendsList />} />
+          <Route path="schedule" element={<ScheduleCombine />} />
+          <Route path="settings" element={<ProfileSettings onLogout={doLogout} />} />
+          {/* Default to dashboard if no subroute */}
+          <Route path="*" element={<Dashboard onNavigate={navigate} />} />
+        </Routes>
       </main>
 
       {/* Toast notifications */}
