@@ -6,12 +6,14 @@ import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPassword from './pages/ResetPassword';
+import Avail from './pages/Avail'; 
 
 function App() {
   return (
     <Router >
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/avail" element={<Avail />} />
         <Route path="/cards" element={<CardPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
