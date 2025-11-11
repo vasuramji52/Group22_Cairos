@@ -88,9 +88,10 @@ export function NileWave({ className = "" }: { className?: string }) {
   );
 }
 
-export function PapyrusCard({  children,  className = "",}: {  children: React.ReactNode;  className?: string;}) {
+export function PapyrusCard({  children,  className = "",  ...props}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
+      {...props}
       className={`relative rounded-lg border-2 border-[#D4AF37] shadow-lg overflow-hidden ${className}`}
       style={{
         backgroundImage:

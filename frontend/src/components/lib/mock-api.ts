@@ -237,7 +237,7 @@ export async function suggestSchedule(params: {
   };
 }
 
-export async function createEvent(params: {
+export async function createEvent(_params: {
   friendId: string;
   title: string;
   start: string;
