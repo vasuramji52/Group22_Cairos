@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -13,8 +13,8 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { EgyptianBorder, PapyrusCard, AnkhIcon } from "./egyptian-decorations";
-import { getMe, type User as UserType } from "../lib/mock-api";
-//import { toast } from "sonner@2.0.3";
+import { getMeReal } from "../lib/api";
+
 
 interface ProfileSettingsProps {
   onLogout: () => void;
@@ -24,12 +24,26 @@ export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
   const [user, setUser] = useState<UserType | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  async function loadUser() {
+  try {
+    const data = await getMeReal();
+    setUser(data);
+  } catch (err) {
+    console.error("Failed to load user:", err);
+  }
+}
+
+
   function doLogout(event: any): void {
-      event.preventDefault();
-      // Clear all session data
-      localStorage.removeItem("token_data");
-      localStorage.removeItem('user_data');
-      window.location.href = '/';
+    event.preventDefault();
+    // Clear all session data
+    localStorage.removeItem("token_data");
+    localStorage.removeItem('user_data');
+    window.location.href = '/';
   };
 
   return (
@@ -63,23 +77,17 @@ export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
                 </div>
                 <div>
                   <p className="text-[#1B4B5A]">Google Calendar</p>
-                  <p className="text-[#2C6E7E]">
-                    {user?.google.connected ? "Connected" : "Not connected"}
-                  </p>
                 </div>
               </div>
-              {user?.google.connected ? (
-                <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full">
-                  Active
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="border-[#D4AF37] text-[#1B4B5A]"
-                >
-                  Connect
-                </Button>
-              )}
+              <div
+                className={`px-3 py-1 rounded-full ${
+                  user?.google.connected
+                    ? "bg-emerald-100 text-emerald-900"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {user?.google.connected ? "Connected" : "Not Connected"}
+              </div>
             </div>
           </CardContent>
         </PapyrusCard>

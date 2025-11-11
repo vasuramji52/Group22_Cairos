@@ -217,7 +217,7 @@ function CardUI()
               <Sun className="w-4 h-4" />
             </div>
             <p className="text-center text-[#C5A572] mt-2 text-xs">
-              Like the Nile flows eternal
+              Discover the perfect moments to connect
             </p>
           </div>
         </div>
