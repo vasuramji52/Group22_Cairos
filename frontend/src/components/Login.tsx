@@ -2,19 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildPath } from "./path";
 import { storeToken } from "../tokenStorage";
-import { jwtDecode } from "jwt-decode";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import "./ui/Login.css";
 import "./ui/index.css";
-
-interface DecodedToken {
-  iat: number; // issued at
-  firstName: string;
-  lastName: string;
-  [key: string]: any; // optional, in case there are other fields
-}
 
 function Login() {
   const [message, setMessage] = useState("");
@@ -93,10 +85,10 @@ function Login() {
       }
 
       const token = data.accessToken;
-      // ✅ store token correctly
+      // store token correctly
       storeToken({ accessToken: token });
 
-      // ✅ get canonical user info
+      // get canonical user info
       const meResp = await fetch(buildPath("api/me"), {
         headers: { Authorization: `Bearer ${token}` },
       });

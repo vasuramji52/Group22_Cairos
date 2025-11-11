@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -189,7 +188,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           {/* Friends Card */}
           <PapyrusCard
             className="cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => onNavigate("friends")}
+            onClick={() => onNavigate("/cards/friends")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
@@ -215,7 +214,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 ? "cursor-pointer hover:shadow-xl transition-shadow"
                 : "opacity-60 cursor-not-allowed"
             }`}
-            onClick={() => user?.google.connected && onNavigate("schedule")}
+            onClick={() => user?.google.connected && onNavigate("/cards/schedule")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">

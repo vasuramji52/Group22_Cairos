@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { CalendarDays, Clock, Users, Sparkles, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, Clock, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import {
   Dialog,
   DialogContent,

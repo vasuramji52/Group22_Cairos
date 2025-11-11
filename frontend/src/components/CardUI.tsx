@@ -1,7 +1,4 @@
 // Old archi
-import React, { useState } from 'react';
-import { buildPath } from './path';
-import { retrieveToken, storeToken } from '../tokenStorage';
 import { useEffect } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import {
@@ -30,12 +27,6 @@ function CardUI()
         navigate("/");
       }
     }, [navigate]);
-
-    function doLogout(event?: any): void {
-        event?.preventDefault();
-        localStorage.removeItem('user_data');
-        navigate("/");
-    };
 
     const currentPath = location.pathname;
     /*const [message,setMessage] = useState('');
@@ -229,7 +220,7 @@ function CardUI()
           <Route path="dashboard" element={<Dashboard onNavigate={navigate} />} />
           <Route path="friends" element={<FriendsList />} />
           <Route path="schedule" element={<ScheduleCombine />} />
-          <Route path="settings" element={<ProfileSettings onLogout={doLogout} />} />
+          <Route path="settings" element={<ProfileSettings />} />
           {/* Default to dashboard if no subroute */}
           <Route path="*" element={<Dashboard onNavigate={navigate} />} />
         </Routes>
