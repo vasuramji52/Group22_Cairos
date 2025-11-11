@@ -15,13 +15,18 @@ import {
 import { EgyptianBorder, PapyrusCard, AnkhIcon } from "./egyptian-decorations";
 import { getMeReal } from "../lib/api";
 
+type User = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isVerified: boolean;
+  google: { connected: boolean; accountId: string | null };
+  createdAt: string; updatedAt: string;
+};
 
-interface ProfileSettingsProps {
-  onLogout: () => void;
-}
-
-export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
-  const [user, setUser] = useState<UserType | null>(null);
+export function ProfileSettings() {
+  const [user, setUser] = useState<User | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
                 className={`px-3 py-1 rounded-full ${
                   user?.google.connected
                     ? "bg-emerald-100 text-emerald-900"
-                    : "bg-red-100 text-red-700"
+                    : "bg-[#F2B9A0] text-[#C1440E]"
                 }`}
               >
                 {user?.google.connected ? "Connected" : "Not Connected"}
