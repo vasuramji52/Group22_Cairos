@@ -26,6 +26,8 @@ export function ProfileSettings({ onLogout }: ProfileSettingsProps) {
 
   function doLogout(event: any): void {
       event.preventDefault();
+      // Clear all session data
+      localStorage.removeItem("token_data");
       localStorage.removeItem('user_data');
       window.location.href = '/';
   };

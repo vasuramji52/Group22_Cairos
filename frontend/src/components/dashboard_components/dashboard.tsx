@@ -1,10 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { EgyptianBorder, PapyrusCard, SundialIcon, NileWave } from "./egyptian-decorations";
-import { getMe, completeGoogleConnection, type User } from "../lib/mock-api";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  EgyptianBorder,
+  PapyrusCard,
+  SundialIcon,
+  NileWave,
+} from "./egyptian-decorations";
+//import { getMe, completeGoogleConnection, type User } from "../lib/mock-api";
 import { ImageWithFallback } from "./ImageWithFallback";
+import { api, getMeReal } from "../lib/api";
+
+type User = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isVerified: boolean;
+  google: { connected: boolean; accountId: string | null };
+  createdAt: string;
+  updatedAt: string;
+};
 
 interface DashboardProps {
   onNavigate: (view: string) => void;
@@ -19,27 +42,69 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    // If we came back from Google with ?google=connected, refresh user from /api/me
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google") === "connected") {
+      // remove the query param from the URL (no reload)
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loadUser(); // this will fetch /api/me and set user (google.connected = true)
+    }
+  }, []);
+
+  // Old mock function to call the me endpoint
+  // async function loadUser() {
+  //   try {
+  //     const userData = await getMe();
+  //     setUser(userData);
+  //   } catch (error) {
+  //     console.error("Failed to load user:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
   async function loadUser() {
     try {
-      const userData = await getMe();
-      setUser(userData);
-    } catch (error) {
-      console.error("Failed to load user:", error);
+      const u = await getMeReal(); // calls /api/me with token from localStorage
+      setUser(u);
+      // (optional) persist if you like:
+      localStorage.setItem("user_data", JSON.stringify(u));
+    } catch (err) {
+      console.error("Failed to load user:", err);
     } finally {
       setLoading(false);
     }
   }
 
+  // Old mock function to complete Google OAuth
+  // async function handleConnectGoogle() {
+  //   setConnecting(true);
+  //   try {
+  //     // Simulate OAuth flow
+  //     await completeGoogleConnection();
+  //     await loadUser();
+  //   } catch (error) {
+  //     console.error("Failed to connect Google Calendar:", error);
+  //   } finally {
+  //     setConnecting(false);
+  //   }
+  // }
+
   async function handleConnectGoogle() {
     setConnecting(true);
     try {
-      // Simulate OAuth flow
-      await completeGoogleConnection();
-      await loadUser();
+      // Must be authenticated; api() will add Authorization header from localStorage
+      const res = await api("/api/oauth/google/init");
+      const data = await res.json(); // { url: "https://accounts.google.com/o/oauth2/v2/auth?..." }
+
+      if (!data?.url) throw new Error("No auth URL from init");
+
+      // Send the user to Google’s consent screen
+      window.location.href = data.url;
     } catch (error) {
-      console.error("Failed to connect Google Calendar:", error);
-    } finally {
-      setConnecting(false);
+      console.error("Failed to start Google OAuth:", error);
+      setConnecting(false); // stay on page if something failed
     }
   }
 
@@ -59,8 +124,12 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           <div className="flex items-center gap-3 mb-4">
             <SundialIcon className="w-10 h-10 text-[#D4AF37]" />
             <div>
-              <h1 className="text-[#D4AF37] tracking-wide">Welcome back, {user?.firstName}</h1>
-              <p className="text-[#C5A572]">Find the perfect moment to connect</p>
+              <h1 className="text-[#D4AF37] tracking-wide">
+                Welcome back, {user?.firstName}
+              </h1>
+              <p className="text-[#C5A572]">
+                Find the perfect moment to connect
+              </p>
             </div>
           </div>
           <EgyptianBorder className="my-4" />
@@ -77,7 +146,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <div>
               <h2 className="text-[#D4AF37] mb-2">Seize Your Kairos</h2>
               <p className="text-[#F5E6D3] max-w-md">
-                Like the ancient Egyptians tracked time by the sun, discover the perfect moments to meet with your companions.
+                Like the ancient Egyptians tracked time by the sun, discover the
+                perfect moments to meet with your companions.
               </p>
             </div>
           </div>
@@ -117,7 +187,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Friends Card */}
-          <PapyrusCard className="cursor-pointer hover:shadow-xl transition-shadow" onClick={() => onNavigate("friends")}>
+          <PapyrusCard
+            className="cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => onNavigate("friends")}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
                 <Users className="w-5 h-5 text-[#C1440E]" />
