@@ -1,6 +1,4 @@
 // backend/availability.util.js
-// If Node < 18, install node-fetch and uncomment the next line:
-// const fetch = (...args) => import('node-fetch').then(m => m.default(...args));
 
 /** Call Google Calendar FreeBusy for the primary calendar. */
 async function fetchFreeBusy(accessToken, timeMinISO, timeMaxISO, tz = 'UTC') {

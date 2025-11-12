@@ -16,14 +16,18 @@ import {
 import { EgyptianBorder, PapyrusCard, SundialIcon } from "./egyptian-decorations";
 import { getFriends, suggestSchedule, createEvent, type Friend, type Suggestion } from "../lib/mock-api";
 import { toast } from "sonner";
+import { availabilityFirst } from "../lib/api";
+
 
 export function ScheduleCombine() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selectedFriendId, setSelectedFriendId] = useState("");
   const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("17:00");
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("00:00");
   const [duration, setDuration] = useState("60");
+  const [workStart, setWorkStart] = useState("09:00");
+  const [workEnd, setWorkEnd] = useState("17:00");
   const [timezone, setTimezone] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -55,36 +59,53 @@ export function ScheduleCombine() {
   }
 
   async function handleFindTime() {
-    if (!selectedFriendId || !date || !startTime || !endTime) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await suggestSchedule({
-        friendId: selectedFriendId,
-        date,
-        timeWindow: { start: startTime, end: endTime },
-        timezone,
-        durationMin: parseInt(duration),
-        granularityMin: 15,
-      });
-
-      setSuggestions(response.suggestions);
-      setShowSuggestions(true);
-
-      if (response.suggestions.length === 0) {
-        toast.info("No available times found in this window");
-      } else {
-        toast.success(`Found ${response.suggestions.length} available time slots!`);
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to find available times");
-    } finally {
-      setLoading(false);
-    }
+  if (!selectedFriendId || !date || !startTime || !endTime || !timezone) {
+    toast.error("Please fill in all fields");
+    return;
   }
+
+  setLoading(true);
+  try {
+    // TODO: replace with the logged-in user's id when auth is wired
+    const userA = "690004f1ec266b7e400f97ba";
+    const userB = "690a0e84cb46c82f3475fe4c";
+
+    const resp = await availabilityFirst({
+      userA,
+      userB,
+      date,               // yyyy-mm-dd
+      startTime,          // HH:mm (meeting window start)
+      endTime,            // HH:mm (meeting window end)
+      tz: timezone,       // e.g., America/New_York
+      minutes: parseInt(duration, 10),
+      workStart,          // HH:mm (user workday start)
+      workEnd,            // HH:mm (user workday end)
+    });
+
+    if (resp.error) throw new Error(resp.error);
+
+    // Normalize single slot
+    const first =
+      resp.firstSlot ??
+      (resp.slotStart && resp.slotEnd ? { start: resp.slotStart, end: resp.slotEnd } : null) ??
+      (Array.isArray(resp.slots) ? resp.slots[0] ?? null : null);
+
+    if (first && first.start && first.end) {
+      setSuggestions([{ start: first.start, end: first.end }]);
+      setShowSuggestions(true);
+      toast.success("Found an available time!");
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(true);
+      toast.info("No available times found in this window");
+    }
+  } catch (err: any) {
+    toast.error(err?.message || "Failed to find available times");
+  } finally {
+    setLoading(false);
+  }
+}
+
 
   function handleSelectSlot(slot: Suggestion) {
     setSelectedSlot(slot);
@@ -250,6 +271,34 @@ export function ScheduleCombine() {
                     <SelectItem value="120">2 hours</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Work Hours */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="workStart" className="text-[#1B4B5A]">
+                    Work Start Time
+                  </Label>
+                  <Input
+                    id="workStart"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setWorkStart(e.target.value)}
+                    className="bg-white border-[#D4AF37]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="workEnd" className="text-[#1B4B5A]">
+                    Work End Time
+                  </Label>
+                  <Input
+                    id="workEnd"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setWorkEnd(e.target.value)}
+                    className="bg-white border-[#D4AF37]"
+                  />
+                </div>
               </div>
 
               {/* Timezone */}
