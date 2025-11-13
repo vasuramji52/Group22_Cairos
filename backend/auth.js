@@ -58,7 +58,7 @@ exports.setApp = function (app, client) {
       // Choose which base to use
       let verifyBase;
       if (platform === 'flutter') {
-        verifyBase = process.env.MOBILE_DEEP_LINK || 'cairosapp://verified';
+        verifyBase = process.env.MOBILE_VERIFY_DEEP_LINK || 'cairosapp://verified';
       } else {
         verifyBase = FRONTEND_BASE_URL
       }
@@ -70,7 +70,7 @@ exports.setApp = function (app, client) {
       console.log('ENV BACKEND_BASE_URL:', process.env.BACKEND_BASE_URL);
       console.log('CONST BACKEND_BASE_URL:', BACKEND_BASE_URL);
       console.log('ENV FRONTEND_BASE_URL:', process.env.FRONTEND_BASE_URL);
-      console.log('ENV MOBILE_DEEP_LINK:', process.env.MOBILE_DEEP_LINK);
+      console.log('ENV MOBILE_VERIFY_DEEP_LINK:', process.env.MOBILE_VERIFY_DEEP_LINK);
       console.log('Register platform:', platform);
       console.log('Composed verify link:', link);
 
@@ -113,7 +113,7 @@ exports.setApp = function (app, client) {
 
       const verifyBase =
         platform === 'flutter'
-          ? process.env.MOBILE_DEEP_LINK || 'cairosapp://verified'
+          ? process.env.MOBILE_VERIFY_DEEP_LINK || 'cairosapp://verified'
           : FRONTEND_BASE_URL
 
       console.log('Verify handler platform:', platform);
@@ -198,7 +198,16 @@ exports.setApp = function (app, client) {
       // issue a 15-minute reset token
       const { raw: resetToken } = await issueToken(db, { userId: user._id, type: 'reset', minutes: 15 });
 
-      const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}`;
+      const platform = req.headers['x-platform'] || req.body.platform || 'web';
+
+      let resetBase;
+      if (platform === 'flutter') {
+        resetBase = process.env.MOBILE_RESET_DEEP_LINK || 'cairosapp://reset';
+      } else {
+        resetBase = FRONTEND_BASE_URL;
+      }
+
+      const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}&platform=${platform}`;
 
       await sendMail({
         to: normalizedEmail,
@@ -220,15 +229,29 @@ exports.setApp = function (app, client) {
 
   app.get('/api/reset-password-link', async (req, res) => {
     try {
-      const { uid, token } = req.query;
+      const { uid, token, platform } = req.query;
       if (!uid || !token) return res.status(400).send('Missing uid or token');
 
 
       const ok = await validateToken(db, { userId: uid, type: 'reset', raw: token });
       if (!ok.ok) return res.status(400).send('Reset link invalid or expired');
 
-      // Send them to your frontend page to enter a new password
-      return res.redirect(`${FRONTEND_BASE_URL}/reset-password?uid=${uid}&token=${token}`);
+      // Choose redirect target
+      const resetBase =
+        platform === 'flutter'
+          ? process.env.MOBILE_RESET_DEEP_LINK || 'cairosapp://reset'
+          : FRONTEND_BASE_URL;
+
+      console.log("Reset handler platform:", platform);
+      console.log("Reset redirect base:", resetBase);
+
+      // Redirect user to appropriate platform
+      if (platform === 'flutter') {
+        return res.redirect(`${resetBase}?uid=${uid}&token=${token}`);
+      } else {
+        return res.redirect(`${resetBase}/reset-password?uid=${uid}&token=${token}`);
+      }
+
     } catch (e) {
       console.error('Reset link error:', e);
       return res.status(500).send('Server error');
