@@ -29,8 +29,29 @@ async function start() {
     console.log("✅ Token indexes ensured");
 
     // 3. middleware
-    app.use(cors());
+    const allowedOrigins = [
+      "http://localhost:5173",       // local React
+      "http://127.0.0.1:5173",
+      "https://vasupradha.xyz",      // production React
+      "https://www.vasupradha.xyz"
+    ];
+
+    const corsOptions = {
+      origin: function (origin, cb) {
+        if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+        return cb(new Error("Not allowed by CORS: " + origin));
+      },
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-platform"],
+      credentials: true
+    };
+
+    app.use(cors(corsOptions));
+    app.options(/.*/, cors(corsOptions));
     app.use(express.json());
+
+    console.log("🌎 Running backend with BASE URL:", process.env.BACKEND_BASE_URL);
+    require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
     // 4. basic ping route
     app.get("/__ping", (_req, res) =>
@@ -63,6 +84,7 @@ async function start() {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ API listening on ${PORT}`);
+      console.log(`🌍 Environment base URL: ${process.env.BACKEND_BASE_URL}`);
     });
   } catch (err) {
     console.error("❌ Startup failed:", err);
