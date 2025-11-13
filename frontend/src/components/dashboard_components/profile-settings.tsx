@@ -26,7 +26,11 @@ type User = {
 };
 
 export function ProfileSettings() {
-  const [user, setUser] = useState<User | null>(null);
+  //const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem("user_data");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
