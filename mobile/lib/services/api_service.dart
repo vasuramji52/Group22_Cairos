@@ -52,4 +52,6 @@ class ApiService {
     );
     return response;
   }
+
+  static Future confirmResetPassword(String uid, String token, String text) async {}
 }
