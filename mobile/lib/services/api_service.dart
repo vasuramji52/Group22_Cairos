@@ -2,7 +2,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const baseUrl = 'http://localhost:5000/api';
+  /// 👇 Use the production API when deployed
+  static const String prodBaseUrl = 'https://api.vasupradha.xyz/api';
+
+  /// 👇 Use local server when testing on an Android emulator
+  /// (Flutter uses 10.0.2.2 instead of localhost)
+  static const String localBaseUrl = 'http://10.0.2.2:5000/api';
+
+  /// 👇 Choose the correct one automatically
+  static const bool useLocal = false; // change to false for production
+  static String get baseUrl => useLocal ? localBaseUrl : prodBaseUrl;
 
   static Future<http.Response> loginUser(String email, String password) async {
     final response = await http.post(
@@ -21,7 +30,10 @@ class ApiService {
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-platform': 'flutter', // <— lets backend know this is from mobile
+      },
       body: jsonEncode({
         'firstName': firstName,
         'lastName': lastName,
