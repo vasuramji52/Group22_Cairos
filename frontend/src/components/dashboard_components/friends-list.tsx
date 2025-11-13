@@ -151,7 +151,7 @@ export function FriendsList() {
             <form onSubmit={handleAddFriend} className="flex gap-2">
               <Input
                 type="email"
-                placeholder="friend@example.com"
+                placeholder="friend@gmail.com"
                 value={newFriendEmail}
                 onChange={(e) => setNewFriendEmail(e.target.value)}
                 className="flex-1 bg-white border-[#D4AF37] focus:ring-[#D4AF37]"
@@ -197,7 +197,7 @@ export function FriendsList() {
                   {searchQuery ? "No friends match your search" : "No friends yet"}
                 </p>
                 {!searchQuery && (
-                  <p className="text-[#C5A572]">
+                  <p className="text-[#946923]">
                     Add friends by their email address to start finding the perfect time to meet
                   </p>
                 )}
@@ -221,15 +221,15 @@ export function FriendsList() {
                           {showFullName && (
                             <p className="text-[#2C6E7E]">{fullName}</p>
                           )}
-                          <p className="text-[#C5A572]">{friend.email}</p>
+                          <p className="text-[#946923]">{friend.email}</p>
                         </div>
                       </div>
                       <Button
                         variant="ghost"
-                        size="icon"
                         onClick={() => setDeleting({ id: friend._id, email: friend.email })}
                         className="text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
                       >
+                        <p className="text-sm">Delete</p>
                         <Trash2 className="w-5 h-5" />
                       </Button>
                     </div>

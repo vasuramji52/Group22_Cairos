@@ -1299,6 +1299,10 @@ body,
     color: #f5e6d3;
   }
 
+  .text-\[\#946923\] {
+    color: #946923;
+  }
+
   .text-card-foreground {
     color: var(--card-foreground);
   }
