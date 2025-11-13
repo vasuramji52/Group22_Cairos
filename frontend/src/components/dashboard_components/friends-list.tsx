@@ -204,36 +204,39 @@ export function FriendsList() {
               </CardContent>
             </PapyrusCard>
           ) : (
-            filteredFriends.map((friend) => (
-              <PapyrusCard key={friend._id}>
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
-                        {friend.nickname.charAt(0).toUpperCase()}
+            filteredFriends.map((friend) => {
+              const fullName = `${friend.firstName ?? ""} ${friend.lastName ?? ""}`.trim();
+              const showFullName = Boolean(fullName) && fullName !== friend.nickname;
+
+              return (
+                <PapyrusCard key={friend._id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
+                          {friend.nickname.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="text-[#1B4B5A]">{friend.nickname}</h3>
+                          {showFullName && (
+                            <p className="text-[#2C6E7E]">{fullName}</p>
+                          )}
+                          <p className="text-[#C5A572]">{friend.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-[#1B4B5A]">{friend.nickname}</h3>
-                        {(friend.firstName || friend.lastName) && (
-                          <p className="text-[#2C6E7E]">
-                            {friend.firstName ?? ""} {friend.lastName ?? ""}
-                          </p>
-                        )}
-                        <p className="text-[#C5A572]">{friend.email}</p>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleting({ id: friend._id, email: friend.email })}
+                        className="text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleting({ id: friend._id, email: friend.email })}
-                      className="text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </PapyrusCard>
-            ))
+                  </CardContent>
+                </PapyrusCard>
+              );
+            })
           )}
         </div>
 
