@@ -24,6 +24,7 @@ type User = {
   email: string;
   isVerified: boolean;
   google: { connected: boolean; accountId: string | null };
+  friends?: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -114,6 +115,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
       </div>
     );
   }
+
+  const friendCount = Array.isArray(user?.friends) ? user.friends.length : 0;
+  const hasFriends = friendCount > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -262,9 +266,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  2
+                  {hasFriends ? "✓" : "2"}
                 </div>
-                <p>Add friends to your circle by their email address</p>
+                <p>
+                  {hasFriends
+                    ? `You have ${friendCount} ${friendCount === 1 ? "friend" : "friends"} in your circle`
+                    : "Add friends to your circle by their email address"}
+                </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
