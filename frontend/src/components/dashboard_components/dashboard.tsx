@@ -256,11 +256,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <div className="space-y-3 text-[#2C6E7E]">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  1
+                  {user?.google.connected ? "✓" : "1"}
                 </div>
                 <p>
                   {user?.google.connected
-                    ? "✓ Calendar connected"
+                    ? "Calendar connected"
                     : "Connect your Google Calendar to access your schedule"}
                 </p>
               </div>
