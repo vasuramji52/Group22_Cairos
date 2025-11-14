@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -14,10 +14,12 @@ import { ProfileSettings } from "./dashboard_components/profile-settings";
 import { SundialIcon } from "./dashboard_components/egyptian-decorations";
 import { Toaster } from "./ui/sonner";
 import './ui/dashboard.css';
+import { getFriendsReal } from "./lib/friends.api";
 
 function CardUI()
 {
     const navigate = useNavigate();
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
       const userData = localStorage.getItem("user_data");
@@ -26,6 +28,23 @@ function CardUI()
         navigate("/");
       }
     }, [navigate]);
+
+    async function loadPendingCount() {
+      try {
+        const data = await getFriendsReal(); // same real API friends loader
+        setPendingCount((data?.receivedRequests ?? []).length);
+      } catch (err) {
+        console.error("Failed to load pending count:", err);
+      }
+    }
+
+    useEffect(() => {
+      loadPendingCount();
+
+      // update every 30s
+      const interval = setInterval(loadPendingCount, 30000);
+      return () => clearInterval(interval);
+    }, []);
 
     const currentPath = location.pathname;
     
@@ -69,18 +88,30 @@ function CardUI()
               <span>Dashboard</span>
             </Link>
             
-            <Link
-              to="/cards/friends"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                currentPath === "/cards/friends"
-                  ? "bg-[#D4AF37] text-[#1B4B5A]"
-                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-              }`}
-            >
-              <Users className="w-5 h-5" />
-              <span>Your Circle</span>
-            </Link>
-            
+            <div className="relative">
+              <Link
+                to="/cards/friends"
+                className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  currentPath === "/cards/friends"
+                    ? "bg-[#D4AF37] text-[#1B4B5A]"
+                    : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+                }`}
+              >
+                <Users className="w-5 h-5" />
+                <span>Your Circle</span>
+              </Link>
+              
+              {pendingCount > 0 && (
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 right-4 bg-[#C1440E] text-white 
+                             text-xs font-bold w-5 h-5 flex items-center justify-center
+                             rounded-full border border-red-900 shadow"
+                >
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+
             <Link
               to="/cards/schedule"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
@@ -131,7 +162,7 @@ function CardUI()
       >
         <Routes>
           <Route path="dashboard" element={<Dashboard onNavigate={navigate} />} />
-          <Route path="friends" element={<FriendsList />} />
+          <Route path="friends" element={<FriendsList onPendingChange={setPendingCount} />} />
           <Route path="schedule" element={<ScheduleCombine />} />
           <Route path="settings" element={<ProfileSettings />} />
           <Route path="*" element={<Dashboard onNavigate={navigate} />} />
