@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
+
+// Screens
 import 'screens/login_screen.dart';
 import 'screens/verified_screen.dart';
+import 'screens/forgot_password_screen.dart';
+import 'screens/reset_password_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +20,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final AppLinks _appLinks;
-  String? _initialLink;
   Widget _startScreen = const LoginScreen();
 
   @override
@@ -28,17 +31,60 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initDeepLinkHandling() async {
     _appLinks = AppLinks();
 
-    // Cold start: check if app launched via a link
-    final Uri? initialUri = await _appLinks.getInitialLink();
-    if (initialUri != null && initialUri.toString().contains('verified=1')) {
-      setState(() => _startScreen = const VerifiedScreen());
+    // 🚀 COLD START: app launched from a link
+    try {
+      final Uri? initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleIncomingLink(initialUri);
+      }
+    } catch (e) {
+      debugPrint('Error reading initial link: $e');
     }
 
-    // Warm state: listen for link while app is running
-    _appLinks.uriLinkStream.listen((Uri? uri) {
-      if (uri != null && uri.toString().contains('verified=1')) {
-        setState(() => _startScreen = const VerifiedScreen());
+    // 🔥 WARM STATE: app already open, receives a link
+    _appLinks.uriLinkStream.listen(
+      (Uri? uri) {
+        if (uri != null) {
+          _handleIncomingLink(uri);
+        }
+      },
+      onError: (err) {
+        debugPrint('Deep link stream error: $err');
+      },
+    );
+  }
+
+  /// 💡 Central place to route deep links
+  void _handleIncomingLink(Uri uri) {
+    final link = uri.toString();
+    debugPrint('🔗 Incoming deep link: $link');
+
+    // ---- EMAIL VERIFICATION ----
+    // You’re redirecting to: cairosapp://verified?verified=1
+    if (link.contains('verified=1')) {
+      setState(() {
+        _startScreen = const VerifiedScreen();
+      });
+      return;
+    }
+
+    // ---- RESET PASSWORD ----
+    // For example: cairosapp://reset-password?uid=...&token=...
+    if (link.contains('reset')) {
+      final uid = uri.queryParameters['uid'];
+      final token = uri.queryParameters['token'];
+
+      if (uid != null && token != null) {
+        setState(() {
+          _startScreen = ResetPasswordScreen(uid: uid, token: token);
+        });
       }
+      return;
+    }
+
+    // Fallback if link is unknown → go to login
+    setState(() {
+      _startScreen = const LoginScreen();
     });
   }
 
