@@ -160,7 +160,6 @@ exports.setApp = function(app, client){
     app.get('/api/getfriends', requireAuth, async(req, res, next) => {
         const userId = req.userId;
         let error = '';
-        console.log("HEADER:", req.headers.authorization);
 
 
         try{
