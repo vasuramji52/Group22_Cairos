@@ -59,7 +59,7 @@ const ForgotPasswordForm = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@gmail.com"
+            placeholder="you@email.com"
             className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] placeholder:text-[#1B4B5A]/40"
             required
           />

@@ -189,9 +189,3 @@
 html {
   font-size: var(--font-size);
 }
-
-@layer utilities {
-  .bg-\[\#C1440E\] {
-    background-color: #c1440e;
-  }
-}
