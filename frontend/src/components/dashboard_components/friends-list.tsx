@@ -21,6 +21,8 @@ import {
   getFriendsReal,
   addFriendReal,
   removeFriendReal,
+  acceptFriendReal,
+  declineFriendReal,
   type FriendDTO,
 } from "../lib/friends.api";
 
@@ -35,6 +37,9 @@ type UIFriend = {
 
 export function FriendsList() {
   const [friends, setFriends] = useState<UIFriend[]>([]);
+  const [incoming, setIncoming] = useState<UIFriend[]>([]);   // receivedRequests
+  const [outgoing, setOutgoing] = useState<UIFriend[]>([]);   // sentRequests
+
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,30 +55,55 @@ export function FriendsList() {
   async function loadFriends() {
     setLoading(true);
     try {
-      const data = await getFriendsReal(); // { friends: FriendDTO[] }
-      const list: UIFriend[] = (data?.friends ?? []).map((f: FriendDTO) => {
-        const _id = String((f as any)._id ?? "");
-        const email = (f as any).email ?? "";
-        const firstName = (f as any).firstName ?? undefined;
-        const lastName = (f as any).lastName ?? undefined;
+      const data = await getFriendsReal(); 
+      // data = { friends, sentRequests, receivedRequests }
 
-        // Choose a pleasant display nickname
-        const nickname =
-          (firstName && lastName && `${firstName} ${lastName}`) ||
-          firstName ||
-          email?.split("@")[0] ||
-          "Friend";
+      const mapToUI = (arr: any[]) =>
+        arr.map((f: any) => ({
+          _id: typeof f._id === "object" ? f._id.toString() : String(f._id),
+          email: f.email,
+          firstName: f.firstName,
+          lastName: f.lastName,
+          nickname:
+            f.firstName && f.lastName
+              ? `${f.firstName} ${f.lastName}`
+              : f.email?.split("@")[0] || "Friend",
+        }));
 
-        return { _id, email, firstName, lastName, nickname };
-      });
-      setFriends(list);
-    } catch (error) {
-      console.error("Failed to load friends:", error);
+
+      setFriends(mapToUI(data.friends ?? []));
+      setIncoming(mapToUI(data.receivedRequests ?? []));
+      setOutgoing(mapToUI(data.sentRequests ?? []));
+    } catch (e) {
       toast.error("Failed to load friends");
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleAccept(requesterId: string) {
+    try {
+      const res = await acceptFriendReal(requesterId);
+      if (res.error) throw new Error(res.error);
+      toast.success("Friend request accepted!");
+      await loadFriends();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to accept request");
+    }
+}
+
+async function handleDecline(requesterId: string) {
+  try {
+    const res = await declineFriendReal(requesterId);
+    if (res.error) throw new Error(res.error);
+    toast.success("Friend request declined");
+    await loadFriends();
+  } catch (e: any) {
+    toast.error(e.message ?? "Failed to decline request");
+  }
+}
+
+
 
   async function handleAddFriend(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +114,7 @@ export function FriendsList() {
     try {
       const res = await addFriendReal(email); // { message } or { error }
       if ((res as any)?.error) throw new Error((res as any).error);
-      toast.success("Friend added successfully!");
+      toast.success("Friend request sent successfully!");
       setNewFriendEmail("");
       await loadFriends();
     } catch (error: any) {
@@ -135,6 +165,50 @@ export function FriendsList() {
           </div>
           <EgyptianBorder className="my-4" />
         </div>
+
+        <PapyrusCard className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
+              <UserPlus className="w-5 h-5" />
+              Pending Requests
+            </CardTitle>
+            {/* <CardDescription className="text-[#2C6E7E]">
+              Accept or decline pending friend requests
+            </CardDescription> */}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loading ? (
+              <p className="text-[#2C6E7E]">Loading...</p>
+            ): incoming.length === 0? (
+              <p className="text-[#2C6E7E]">No pending requests</p>
+            ): (
+              incoming.map((req) => (
+                <div key={req._id} className="flex items-center justify-between p-2 border rounded-md bg-white">
+                  <div className="ml-4">
+                    <p className="font-semibold mt-2 mb-2">{req.nickname}</p>
+                    <p className="text-sm text-[#946923] mb-2">{req.email}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+                      onClick={() => handleAccept(req._id)}
+                    >
+                      Accept
+                    </Button>
+
+                    <Button
+                      className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+                      onClick={() => handleDecline(req._id)}
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </PapyrusCard>
 
         {/* Add Friend Form */}
         <PapyrusCard className="mb-6">
