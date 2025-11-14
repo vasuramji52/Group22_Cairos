@@ -52,6 +52,17 @@ const AuthPageLayout = ({
               <p className="text-[#C5A572] text-xs">Find your moment</p>
             </div>
           </div>
+          <div className="flex items-center gap-6">
+            <p className="text-[#C5A572] hover:text-[#D4AF37] transition-colors">
+              About
+            </p>
+            <p className="text-[#C5A572] hover:text-[#D4AF37] transition-colors">
+              Features
+            </p>
+            <p className="text-[#C5A572] hover:text-[#D4AF37] transition-colors">
+              Contact
+            </p>
+          </div>
         </div>
       </nav>
 
