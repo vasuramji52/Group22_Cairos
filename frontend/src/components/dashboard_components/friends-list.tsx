@@ -16,7 +16,7 @@ import {
 import { EgyptianBorder, PapyrusCard, AnkhIcon } from "./egyptian-decorations";
 import { toast } from "sonner";
 
-// ⬇️ Use the real API helpers (you'll need the file friends.api.ts as discussed)
+// Use the real API helpers (you'll need the file friends.api.ts as discussed)
 import {
   getFriendsReal,
   addFriendReal,
@@ -34,7 +34,11 @@ type UIFriend = {
   nickname: string; // display name in list
 };
 
-export function FriendsList() {
+type FriendsListProps = {
+  onPendingChange?: (count: number) => void;
+};
+
+export function FriendsList({ onPendingChange }: FriendsListProps) {
   const [friends, setFriends] = useState<UIFriend[]>([]);
   const [incoming, setIncoming] = useState<UIFriend[]>([]);   // receivedRequests
   const [_outgoing, setOutgoing] = useState<UIFriend[]>([]);   // sentRequests
@@ -72,6 +76,7 @@ export function FriendsList() {
 
       setFriends(mapToUI(data.friends ?? []));
       setIncoming(mapToUI(data.receivedRequests ?? []));
+      onPendingChange?.(data.receivedRequests?.length || 0);
       setOutgoing(mapToUI(data.sentRequests ?? []));
     } catch (e) {
       toast.error("Failed to load friends");
@@ -89,20 +94,18 @@ export function FriendsList() {
     } catch (e: any) {
       toast.error(e.message ?? "Failed to accept request");
     }
-}
-
-async function handleDecline(requesterId: string) {
-  try {
-    const res = await declineFriendReal(requesterId);
-    if (res.error) throw new Error(res.error);
-    toast.success("Friend request declined");
-    await loadFriends();
-  } catch (e: any) {
-    toast.error(e.message ?? "Failed to decline request");
   }
-}
 
-
+  async function handleDecline(requesterId: string) {
+    try {
+      const res = await declineFriendReal(requesterId);
+      if (res.error) throw new Error(res.error);
+      toast.success("Friend request declined");
+      await loadFriends();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to decline request");
+    }
+  }
 
   async function handleAddFriend(e: React.FormEvent) {
     e.preventDefault();
@@ -182,22 +185,22 @@ async function handleDecline(requesterId: string) {
               <p className="text-[#2C6E7E]">No pending requests</p>
             ): (
               incoming.map((req) => (
-                <div key={req._id} className="flex items-center justify-between p-2 border rounded-md bg-white">
-                  <div className="ml-4">
-                    <p className="font-semibold mt-2 mb-2">{req.nickname}</p>
-                    <p className="text-sm text-[#946923] mb-2">{req.email}</p>
+                <div key={req._id} className="flex items-center justify-between p-4 rounded-xl border border-[#D4AF37]/40 shadow-sm bg-[#FAF4E6] over:shadow-md transition-shadow">
+                  <div className="flex flex-col">
+                    <p className="font-semibold text-[#1B4B5A]">{req.nickname}</p>
+                    <p className="text-sm text-[#946923]">{req.email}</p>
                   </div>
 
                   <div className="flex gap-2">
                     <Button
-                      className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+                      className="px-4 py-2 bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37] rounded-lg"
                       onClick={() => handleAccept(req._id)}
                     >
                       Accept
                     </Button>
 
                     <Button
-                      className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+                      className="px-4 py-2 bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37] rounded-lg]"
                       onClick={() => handleDecline(req._id)}
                     >
                       Decline
@@ -300,7 +303,7 @@ async function handleDecline(requesterId: string) {
                       <Button
                         variant="ghost"
                         onClick={() => setDeleting({ id: friend._id, email: friend.email })}
-                        className="text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
+                        className="flex items-center text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
                       >
                         <p className="text-sm">Delete</p>
                         <Trash2 className="w-5 h-5" />
