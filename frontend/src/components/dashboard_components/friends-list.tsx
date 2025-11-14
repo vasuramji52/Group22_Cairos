@@ -23,7 +23,6 @@ import {
   removeFriendReal,
   acceptFriendReal,
   declineFriendReal,
-  type FriendDTO,
 } from "../lib/friends.api";
 
 // A simple UI shape we control regardless of backend fields
@@ -38,7 +37,7 @@ type UIFriend = {
 export function FriendsList() {
   const [friends, setFriends] = useState<UIFriend[]>([]);
   const [incoming, setIncoming] = useState<UIFriend[]>([]);   // receivedRequests
-  const [outgoing, setOutgoing] = useState<UIFriend[]>([]);   // sentRequests
+  const [_outgoing, setOutgoing] = useState<UIFriend[]>([]);   // sentRequests
 
   const [loading, setLoading] = useState(true);
 
