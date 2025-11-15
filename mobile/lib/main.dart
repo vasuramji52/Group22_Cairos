@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
+import 'package:mobile/screens/bottom_nav.dart';
+import 'package:mobile/screens/register_screen.dart';
 
 // Screens
 import 'screens/login_screen.dart';
@@ -90,6 +92,20 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: _startScreen);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/login',
+
+      // 👇 Named routes for your app
+      routes: {
+        '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+        '/forgot': (_) => const ForgotPasswordScreen(),
+        '/reset-password': (_) => const ResetPasswordScreen(uid: '', token: ''),
+
+        // Main app navigation after login
+        '/dashboard': (_) => const BottomNav(),
+      },
+    );
   }
 }

@@ -7,10 +7,10 @@ class ApiService {
 
   /// 👇 Use local server when testing on an Android emulator
   /// (Flutter uses 10.0.2.2 instead of localhost)
-  static const String localBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String localBaseUrl = 'http://192.168.86.32:5000/api';
 
   /// 👇 Choose the correct one automatically
-  static const bool useLocal = false; // change to false for production
+  static const bool useLocal = true; // change to false for production
   static String get baseUrl => useLocal ? localBaseUrl : prodBaseUrl;
 
   static Future<http.Response> loginUser(String email, String password) async {
@@ -47,11 +47,27 @@ class ApiService {
   static Future<http.Response> forgotPassword(String email) async {
     final response = await http.post(
       Uri.parse('$baseUrl/request-password-reset'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
+      headers: {'Content-Type': 'application/json', 'x-platform': 'flutter'},
+      body: jsonEncode({'email': email, 'platform': 'flutter'}),
     );
     return response;
   }
 
-  static Future confirmResetPassword(String uid, String token, String text) async {}
+  static Future<http.Response> confirmResetPassword(
+    String uid,
+    String token,
+    String newPassword,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/confirm-reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'uid': uid,
+        'token': token,
+        'newPassword': newPassword,
+      }),
+    );
+
+    return response;
+  }
 }

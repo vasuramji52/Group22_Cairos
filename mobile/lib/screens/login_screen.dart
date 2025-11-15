@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/bottom_nav.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +30,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (response.statusCode == 200) {
       setState(() => message = 'Login successful!');
       // navigate to your home page
+
+      // Navigate to main app
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => const BottomNav()),
+      // );
+
+      Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
       // Decode backend error message
       String errorMsg = 'Login failed. Please try again.';
