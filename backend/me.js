@@ -10,7 +10,7 @@ exports.setApp = function setApp(app, client) {
     try {
       const user = await db.collection('users').findOne(
         { _id: new ObjectId(req.userId) },
-        { projection: { firstName:1, lastName:1, email:1, isVerified:1, google:1, createdAt:1, updatedAt:1 } }
+        { projection: { firstName:1, lastName:1, email:1, isVerified:1, google:1, friends:1, createdAt:1, updatedAt:1 } }
       );
       if (!user) return res.status(404).json({ error: 'user_not_found' });
 
@@ -26,6 +26,7 @@ exports.setApp = function setApp(app, client) {
             connected: Boolean(user.google?.connected),
             accountId: user.google?.accountId || null
           },
+          friends: Array.isArray(user.friends) ? user.friends : [],
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
