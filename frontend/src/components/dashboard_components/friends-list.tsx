@@ -300,7 +300,7 @@ async function handleDecline(requesterId: string) {
                       <Button
                         variant="ghost"
                         onClick={() => setDeleting({ id: friend._id, email: friend.email })}
-                        className="text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
+                        className="flex items-center text-[#C1440E] hover:text-[#C1440E] hover:bg-red-50"
                       >
                         <p className="text-sm">Delete</p>
                         <Trash2 className="w-5 h-5" />
