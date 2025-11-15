@@ -29,6 +29,7 @@ test('GET /api/me returns user projection', async () => {
     email: 'a@x.com',
     isVerified: true,
     google: { connected: true, accountId: 'g123' },
+    friends: [new ObjectId('507f1f77bcf86cd799439099')],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-02-01')
   };
@@ -41,6 +42,7 @@ test('GET /api/me returns user projection', async () => {
   expect(res.status).toBe(200);
   expect(res.body.user.email).toBe('a@x.com');
   expect(res.body.user.google.connected).toBe(true);
+  expect(res.body.user.friends).toEqual(['507f1f77bcf86cd799439099']);
 });
 
 test('GET /api/me 404 when user missing', async () => {

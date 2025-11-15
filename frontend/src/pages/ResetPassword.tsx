@@ -96,7 +96,7 @@ const ResetPassword = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="new-password" className="text-[#1B4B5A]">
             New password
