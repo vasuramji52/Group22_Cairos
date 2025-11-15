@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../styles/card_ui_styles.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -11,137 +13,66 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.accentTeal, AppColors.darkTeal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
+          children: [ 
+            TopBanner(
+              title: 'Profile & Settings',
+              subtitle: 'Manage your account preferences',
+              icon: const Icon(
+                LucideIcons.user,
+                color: AppColors.gold,
+                size: 50,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Column(children: const [EgyptianBorder(), SizedBox(height: 16)]),
+
+            PapyrusCard(
+              margin: const EdgeInsets.all(16),
+              icon: const Icon(
+                LucideIcons.calendar,
+                color: AppColors.darkTeal,
+                size: 20,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'Settings',
-                    style: TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Connected Accounts',
+                    style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: 8),
                   Text(
-                    'Manage your account preferences',
-                    style: TextStyle(
-                      color: Color(0xFFC5A572),
-                      fontSize: 14,
-                    ),
+                    'Manage your connected calendar services',
+                    style: TextStyle(color: AppColors.accentTeal),
                   ),
+                  SizedBox(height: 8),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Account Section
-            const Text(
-              'Account',
-              style: TextStyle(
+            PapyrusCard(
+              margin: const EdgeInsets.all(16),
+              icon: const Icon(
+                LucideIcons.calendar,
                 color: AppColors.darkTeal,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+                size: 20,
               ),
-            ),
-            const SizedBox(height: 12),
-            _settingsTile('Edit Profile', Icons.person, () {}),
-            _settingsTile('Change Password', Icons.lock, () {}),
-            _settingsTile('Email Preferences', Icons.email, () {}),
-
-            const SizedBox(height: 24),
-
-            // Privacy & Security Section
-            const Text(
-              'Privacy & Security',
-              style: TextStyle(
-                color: AppColors.darkTeal,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _settingsTile('Privacy Settings', Icons.privacy_tip, () {}),
-            _settingsTile('Blocked Users', Icons.block, () {}),
-            _settingsTile('Two-Factor Authentication', Icons.security, () {}),
-
-            const SizedBox(height: 24),
-
-            // Preferences Section
-            const Text(
-              'Preferences',
-              style: TextStyle(
-                color: AppColors.darkTeal,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _settingsTile('Notifications', Icons.notifications, () {}),
-            _settingsTile('Language', Icons.language, () {}),
-            _settingsTile('Theme', Icons.palette, () {}),
-
-            const SizedBox(height: 24),
-
-            // Danger Zone
-            const Text(
-              'Danger Zone',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Log Out'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Account Actions',
+                    style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
+                  ),
+                  SizedBox(height: 8),
+                  
+                ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _settingsTile(String title, IconData icon, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        tileColor: Colors.grey[100],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: AppColors.gold, width: 0.8),
-        ),
-        leading: Icon(icon, color: AppColors.accentTeal),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.darkTeal,
-            fontWeight: FontWeight.w600,
           ),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.accentTeal),
-        onTap: onTap,
+          
       ),
     );
   }
 }
+  
