@@ -88,25 +88,40 @@ export function NileWave({ className = "" }: { className?: string }) {
   );
 }
 
-export function PapyrusCard({  children,  className = "",  ...props}: React.HTMLAttributes<HTMLDivElement>) {
+export function PapyrusCard({
+  children,
+  className = "",
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  const bgUrl =
+    "https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXBlciUyMHRleHR1cmUlMjBiZWlnZXxlbnwxfHx8fDE3NjEyNTE5MTF8MA&ixlib=rb-4.1.0&q=80&w=1080";
+
   return (
     <div
       {...props}
       className={`relative rounded-lg border-2 border-[#D4AF37] shadow-lg overflow-hidden ${className}`}
-      style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXBlciUyMHRleHR1cmUlMjBiZWlnZXxlbnwxfHx8fDE3NjEyNTE5MTF8MA&ixlib=rb-4.1.0&q=80&w=1080')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
     >
+      {/* Background image optimized for LCP */}
+      <img
+        src={bgUrl}
+        alt=""
+        fetchPriority="high"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Warm Egyptian-style parchment overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#F5E6D3]/90 to-[#E8D5B7]/85 pointer-events-none" />
+
+      {/* Gold top/bottom accent lines */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-50" />
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-50" />
+
+      {/* Card content */}
       <div className="relative z-10">{children}</div>
     </div>
   );
 }
+
 
 export function AnkhIcon({ className = "" }: { className?: string }) {
   return (

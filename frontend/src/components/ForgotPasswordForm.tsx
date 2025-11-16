@@ -78,7 +78,12 @@ const ForgotPasswordForm = () => {
         )}
       </form>
 
-      <div className="mt-6 pt-6 border-t border-[#C5A572]/30 text-center">
+      <div
+        className="mt-6 pt-6 text-center"
+        style={{
+          borderTop: "1px solid hsla(42, 63%, 27%, 0.60)",
+        }}
+      >
         <p className="text-sm text-[#1B4B5A]/80">
           Remembered your password?{' '}
           <button

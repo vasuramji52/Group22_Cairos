@@ -995,6 +995,10 @@ body,
     background-color: #faf4e6;
   }
 
+  .bg-\[\#F4D0C1\] {
+    background-color: #f4d0c1;
+  }
+
   .bg-background {
     background-color: var(--background);
   }

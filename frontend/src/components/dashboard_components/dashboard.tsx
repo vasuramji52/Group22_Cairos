@@ -13,7 +13,6 @@ import {
   SundialIcon,
   NileWave,
 } from "./egyptian-decorations";
-//import { getMe, completeGoogleConnection, type User } from "../lib/mock-api";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { api, getMeReal } from "../lib/api";
 
