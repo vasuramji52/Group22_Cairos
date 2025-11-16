@@ -76,6 +76,9 @@ jobs:
           # Install only prod deps on the droplet
           npm ci --omit=dev
 
+          # 👇 ensure TZ is set for any fresh pm2 start
+          export TZ=America/New_York
+
           echo "▶️ Restart API"
           pm2 restart express-server || pm2 start server.js --name "express-server"
           pm2 save
