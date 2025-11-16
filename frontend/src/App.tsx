@@ -6,7 +6,6 @@ import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPassword from './pages/ResetPassword';
-import Avail from './pages/Avail'; 
 
 function App() {
   return (
