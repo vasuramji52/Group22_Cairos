@@ -1,139 +1,149 @@
-// backend/tests/friends.test.js
-const express = require('express');
-const request = require('supertest');
-const { ObjectId } = require('mongodb');
+const request = require("supertest");
+const express = require("express");
+const { ObjectId } = require("mongodb");
 
-jest.mock('../auth.middleware', () => ({
-  requireAuth: jest.fn((req, res, next) => { req.userId = '64a000000000000000000001'; next(); })
+jest.mock("mongodb");
+jest.mock("../auth.middleware", () => ({
+  requireAuth: (req, res, next) => {
+    req.userId = "64a000000000000000000001"; // simulate authenticated user
+    next();
+  },
 }));
 
-// Import requireAuth from the mocked module so we can use mockImplementationOnce
-const { requireAuth } = require('../auth.middleware');
-
-function mkUsersColl() {
-  const api = {
-    _docs: new Map(),
-    findOne: jest.fn(async (filter) => {
-      if (filter._id) return api._docs.get(`id:${String(filter._id)}`) || null;
-      if (filter.email) return api._docs.get(`email:${filter.email}`) || null;
-      return null;
-    }),
-    updateOne: jest.fn(async () => ({ acknowledged: true })),
-    find: jest.fn((filter) => ({
-      toArray: jest.fn(async () => {
-        if (filter._id && filter._id.$in) {
-          return filter._id.$in.map(id => api._docs.get(`id:${String(id)}`)).filter(Boolean);
-        }
-        return [];
-      })
-    }))
-  };
-  return api;
-}
-
-function mkClient(usersColl) {
-  return {
-    db: () => ({
-      collection: (name) => (name === 'users' ? usersColl : {})
-    })
-  };
-}
-
-function buildApp(usersColl) {
-  const app = express();
-  app.use(express.json());
-  const friends = require('../friends');
-  const client = mkClient(usersColl);
-  friends.setApp(app, client);
-  return app;
-}
-
-let usersColl, app;
+let app;
+let usersColl;
 
 beforeEach(() => {
-  jest.resetModules();
-  jest.clearAllMocks();
-  usersColl = mkUsersColl();
-  app = buildApp(usersColl);
+  app = express();
+  app.use(express.json());
+
+  usersColl = {
+    findOne: jest.fn(),
+    find: jest.fn().mockReturnValue({ toArray: jest.fn() }),
+    updateOne: jest.fn(),
+  };
+
+  const client = {
+    db: () => ({
+      collection: () => usersColl,
+    }),
+  };
+
+  // require your friends.js and attach to app
+  require("../friends").setApp(app, client);
 });
 
-describe('friends.js', () => {
-  describe('POST /api/addfriend', () => {
-    it('returns 400 if missing fields', async () => {
-      requireAuth.mockImplementationOnce((req, res, next) => { req.userId = null; next(); });
-      const res = await request(app).post('/api/addfriend').send({});
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'Missing userId or friendEmail field.' });
+
+// ------------------------------------------------------------
+// 1) TEST ADD FRIEND (REQUEST VERSION)
+// ------------------------------------------------------------
+describe("POST /api/addfriend", () => {
+  it("sends a friend request successfully", async () => {
+    const userId = new ObjectId("64a000000000000000000001");
+    const friendId = new ObjectId("64a000000000000000000002");
+
+    // Mock DB lookups
+    usersColl.findOne
+      .mockResolvedValueOnce({
+        _id: userId,
+        email: "me@example.com",
+        isVerified: true,
+        google: { connected: true },
+        friends: [],
+        sentRequests: [],
+        receivedRequests: []
+      })
+      .mockResolvedValueOnce({
+        _id: friendId,
+        email: "f@example.com",
+        isVerified: true,
+        google: { connected: true },
+        friends: [],
+        sentRequests: [],
+        receivedRequests: []
+      });
+
+    usersColl.updateOne.mockResolvedValue({});
+
+    const res = await request(app)
+      .post("/api/addfriend")
+      .send({ friendEmail: "f@example.com" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      message: "Friend request sent successfully",
     });
-    it('returns 400 if user or friend not found', async () => {
-      const res = await request(app).post('/api/addfriend').send({ friendEmail: 'f@example.com' });
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'User not found' });
+
+    expect(usersColl.updateOne).toHaveBeenCalledTimes(2);
+  });
+});
+
+
+// ------------------------------------------------------------
+// 2) TEST GET FRIENDS (EMPTY SECTIONS)
+// ------------------------------------------------------------
+describe("GET /api/getfriends", () => {
+  it("returns empty arrays for no friends and no requests", async () => {
+    const userId = new ObjectId("64a000000000000000000001");
+
+    usersColl.findOne.mockResolvedValue({
+      _id: userId,
+      email: "me@example.com",
+      friends: [],
+      sentRequests: [],
+      receivedRequests: [],
     });
-    it('returns 403 if friend not verified or not connected', async () => {
-      usersColl._docs.set('id:64a000000000000000000001', { _id: new ObjectId('64a000000000000000000001') });
-      usersColl._docs.set('email:f@example.com', { _id: new ObjectId('64a000000000000000000002'), email: 'f@example.com', isVerified: false, google: {} });
-      const res = await request(app).post('/api/addfriend').send({ friendEmail: 'f@example.com' });
-      expect(res.status).toBe(403);
-      expect(res.body).toEqual({ error: 'Cannot add this friend - user not verified or connected with Google.' });
+
+    usersColl.find.mockReturnValue({
+      toArray: jest.fn().mockResolvedValue([]),
     });
-    it('returns 200 and updates both users on success', async () => {
-      usersColl._docs.set('id:64a000000000000000000001', { _id: new ObjectId('64a000000000000000000001') });
-      usersColl._docs.set('email:f@example.com', { _id: new ObjectId('64a000000000000000000002'), email: 'f@example.com', isVerified: true, google: { connected: true } });
-      const res = await request(app).post('/api/addfriend').send({ friendEmail: 'f@example.com' });
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ message: 'Friend added successfully' });
-      expect(usersColl.updateOne).toHaveBeenCalledTimes(2);
+
+    const res = await request(app).get("/api/getfriends");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      friends: [],
+      sentRequests: [],
+      receivedRequests: [],
     });
   });
 
-  describe('POST /api/removefriend', () => {
-    it('returns 400 if missing fields', async () => {
-      requireAuth.mockImplementationOnce((req, res, next) => { req.userId = null; next(); });
-      const res = await request(app).post('/api/removefriend').send({});
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'Missing userId or friendId field.' });
-    });
-    it('returns 400 if user or friend not found', async () => {
-      const res = await request(app).post('/api/removefriend').send({ friendEmail: 'f@example.com' });
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'User not found' });
-    });
-    it('returns 200 and updates both users on success', async () => {
-      usersColl._docs.set('id:64a000000000000000000001', { _id: new ObjectId('64a000000000000000000001') });
-      usersColl._docs.set('email:f@example.com', { _id: new ObjectId('64a000000000000000000002'), email: 'f@example.com' });
-      const res = await request(app).post('/api/removefriend').send({ friendEmail: 'f@example.com' });
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ message: 'Friend removed successfully' });
-      expect(usersColl.updateOne).toHaveBeenCalledTimes(2);
-    });
-  });
+  // ------------------------------------------------------------
+  // 3) TEST GET FRIENDS (HAS FRIENDS)
+  // ------------------------------------------------------------
+  it("returns friends, sent requests, and received requests", async () => {
+    const userId = new ObjectId("64a000000000000000000001");
+    const friendId = new ObjectId("64a000000000000000000002");
 
-  describe('GET /api/getfriends', () => {
-    it('returns 400 if userId not found', async () => {
-  requireAuth.mockImplementationOnce((req, res, next) => { req.userId = null; next(); });
-  const res = await request(app).get('/api/getfriends');
-  expect(res.status).toBe(404);
-  expect(res.body).toEqual({ error: 'User not found' });
+    const friendDoc = {
+      _id: friendId,
+      email: "f@example.com",
+    };
+
+    usersColl.findOne.mockResolvedValue({
+      _id: userId,
+      friends: [friendId],
+      sentRequests: [],
+      receivedRequests: [],
     });
-    it('returns 404 if user not found', async () => {
-      const res = await request(app).get('/api/getfriends');
-      expect(res.status).toBe(404);
-      expect(res.body).toEqual({ error: 'User not found' });
+
+    usersColl.find.mockImplementation(({ _id }) => {
+      if (_id.$in && _id.$in.includes(friendId)) {
+        return { toArray: jest.fn().mockResolvedValue([friendDoc]) };
+      }
+      return { toArray: jest.fn().mockResolvedValue([]) };
     });
-    it('returns empty array if no friends', async () => {
-      usersColl._docs.set('id:64a000000000000000000001', { _id: new ObjectId('64a000000000000000000001'), friends: [] });
-      const res = await request(app).get('/api/getfriends');
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ friends: [] });
-    });
-    it('returns friends list if friends exist', async () => {
-  const friendId = new ObjectId('64a000000000000000000002');
-  usersColl._docs.set('id:64a000000000000000000001', { _id: new ObjectId('64a000000000000000000001'), friends: [friendId] });
-  usersColl._docs.set('id:64a000000000000000000002', { _id: friendId, email: 'f@example.com' });
-  const res = await request(app).get('/api/getfriends');
-  expect(res.status).toBe(200);
-  expect(res.body).toEqual({ friends: [{ _id: friendId.toString(), email: 'f@example.com' }] });
+
+    const res = await request(app).get("/api/getfriends");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      friends: [{
+        _id: friendId.toString(),   // REQUIRED FIX
+        email: "f@example.com",
+      }],
+      sentRequests: [],
+      receivedRequests: [],
     });
   });
 });

@@ -1,5 +1,4 @@
-// Old archi
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -15,10 +14,12 @@ import { ProfileSettings } from "./dashboard_components/profile-settings";
 import { SundialIcon } from "./dashboard_components/egyptian-decorations";
 import { Toaster } from "./ui/sonner";
 import './ui/dashboard.css';
+import { getFriendsReal } from "./lib/friends.api";
 
 function CardUI()
 {
     const navigate = useNavigate();
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
       const userData = localStorage.getItem("user_data");
@@ -28,99 +29,29 @@ function CardUI()
       }
     }, [navigate]);
 
-    const currentPath = location.pathname;
-    /*const [message,setMessage] = useState('');
-    const [searchResults,setResults] = useState('');
-    const [cardList,setCardList] = useState('');
-    const [search,setSearchValue] = React.useState('');
-    const [card,setCardNameValue] = React.useState('');
-    
-    var _ud = localStorage.getItem('user_data');
-    var ud = JSON.parse(String(_ud));
-    var userId = ud.id;
-//    var firstName = ud.firstName;
-//    var lastName = ud.lastName;
-    
-    async function addCard(e:any) : Promise<void>
-    {
-        e.preventDefault();
-
-        var obj = {userId:userId,card:card,jwtToken:retrieveToken()};
-        var js = JSON.stringify(obj);
-
-        try
-        {
-            const response = await fetch(buildPath('api/addcard'),
-            {method:'POST',body:js,headers:{'Content-Type': 'application/json'}});
-
-            let txt = await response.text();
-            let res = JSON.parse(txt);
-
-            if( res.error.length > 0 )
-            {
-                setMessage( "API Error:" + res.error );
-            }
-            else
-            {
-                setMessage('Card has been added');
-                storeToken( res.jwtToken );             
-            }
-        }
-        catch(error:any)
-        {
-            setMessage(error.toString());
-        }
-    };
-
-    async function searchCard(e:any) : Promise<void>
-    {
-        e.preventDefault();
-        
-        var obj = {userId:userId,search:search,jwtToken:retrieveToken()};
-        var js = JSON.stringify(obj);
-
-        try
-        {
-            const response = await fetch(buildPath('api/searchcards'),
-            {method:'POST',body:js,headers:{'Content-Type': 'application/json'}});
-
-            let txt = await response.text();
-            let res = JSON.parse(txt);
-            let _results = res.results;
-            let resultText = '';
-            for( let i=0; i<_results.length; i++ )
-            {
-                resultText += _results[i];
-                if( i < _results.length - 1 )
-                {
-                    resultText += ', ';
-                }
-            }
-            setResults('Card(s) have been retrieved');
-            storeToken( res.jwtToken );
-            setCardList(resultText);
-        }
-        catch(error:any)
-        {
-            alert(error.toString());
-            setResults(error.toString());
-        }
-    };
-
-    function handleSearchTextChange( e: any ) : void
-    {
-        setSearchValue( e.target.value );
+    async function loadPendingCount() {
+      try {
+        const data = await getFriendsReal(); // same real API friends loader
+        setPendingCount((data?.receivedRequests ?? []).length);
+      } catch (err) {
+        console.error("Failed to load pending count:", err);
+      }
     }
 
-    function handleCardTextChange( e: any ) : void
-    {
-        setCardNameValue( e.target.value );
-    }*/
+    useEffect(() => {
+      loadPendingCount();
 
+      // update every 30s
+      const interval = setInterval(loadPendingCount, 30000);
+      return () => clearInterval(interval);
+    }, []);
+
+    const currentPath = location.pathname;
+    
     return (
-    <div className="flex min-h-screen bg-[#1B4B5A]">
+    <div className="min-h-screen bg-[#1B4B5A] flex">
       {/* Sidebar */}
-      <aside className="relative w-64 border-r-2 border-[#D4AF37]/30 flex flex-col overflow-hidden">
+      <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34] border-r-2 border-[#D4AF37]/30 flex flex-col z-50">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34]">
           <div
             className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat pointer-events-none"
@@ -131,17 +62,15 @@ function CardUI()
         </div>
         
         {/* Sidebar content */}
-        <div className="relative z-10 flex flex-col h-full">
+        <div className="relative z-10 flex flex-col h-full overflow-y-auto">
           {/* Logo/Brand */}
-          <div className="p-6 border-b border-[#D4AF37]/30">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center">
-                <SundialIcon className="w-6 h-6 text-[#1B4B5A]" />
-              </div>
-              <div>
-                <h2 className="text-[#D4AF37] tracking-wider">CAIROS</h2>
-                <p className="text-[#C5A572] text-xs">Find your moment</p>
-              </div>
+          <div className="p-6 border-b border-[#D4AF37]/30 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center">
+              <SundialIcon className="w-6 h-6 text-[#1B4B5A]" />
+            </div>
+            <div>
+              <h2 className="text-[#D4AF37] tracking-wider">CAIROS</h2>
+              <p className="text-[#C5A572] text-xs">Find your moment</p>
             </div>
           </div>
         
@@ -159,18 +88,30 @@ function CardUI()
               <span>Dashboard</span>
             </Link>
             
-            <Link
-              to="/cards/friends"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                currentPath === "/cards/friends"
-                  ? "bg-[#D4AF37] text-[#1B4B5A]"
-                  : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
-              }`}
-            >
-              <Users className="w-5 h-5" />
-              <span>Your Circle</span>
-            </Link>
-            
+            <div className="relative">
+              <Link
+                to="/cards/friends"
+                className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  currentPath === "/cards/friends"
+                    ? "bg-[#D4AF37] text-[#1B4B5A]"
+                    : "text-[#C5A572] hover:bg-[#2C6E7E] hover:text-[#D4AF37]"
+                }`}
+              >
+                <Users className="w-5 h-5" />
+                <span>Your Circle</span>
+              </Link>
+              
+              {pendingCount > 0 && (
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 right-4 bg-[#C1440E] text-white 
+                             text-xs font-bold w-5 h-5 flex items-center justify-center
+                             rounded-full border border-red-900 shadow"
+                >
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+
             <Link
               to="/cards/schedule"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
@@ -215,13 +156,15 @@ function CardUI()
       </aside>
             
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main
+        className="flex-1 min-h-screen overflow-y-auto bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E]"
+        style={{ marginLeft: "16rem" }}
+      >
         <Routes>
           <Route path="dashboard" element={<Dashboard onNavigate={navigate} />} />
-          <Route path="friends" element={<FriendsList />} />
+          <Route path="friends" element={<FriendsList onPendingChange={setPendingCount} />} />
           <Route path="schedule" element={<ScheduleCombine />} />
           <Route path="settings" element={<ProfileSettings />} />
-          {/* Default to dashboard if no subroute */}
           <Route path="*" element={<Dashboard onNavigate={navigate} />} />
         </Routes>
       </main>

@@ -1,170 +1,194 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, Clock, Sparkles, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { EgyptianBorder, PapyrusCard, SundialIcon } from "./egyptian-decorations";
-import { getFriends, suggestSchedule, createEvent, type Friend, type Suggestion } from "../lib/mock-api";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  EgyptianBorder,
+  PapyrusCard,
+  SundialIcon,
+} from "./egyptian-decorations";
+import { getFriendsReal, type FriendDTO } from "../lib/friends.api";
+import { type Suggestion } from "../lib/mock-api"; 
 import { toast } from "sonner";
 import { availabilityFirst } from "../lib/api";
 
+function nameOf(f: FriendDTO) {
+  const n = `${(f.firstName ?? "").trim()} ${(f.lastName ?? "").trim()}`.trim();
+  return n || (f.email ?? "Unknown");
+}
 
 export function ScheduleCombine() {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [selectedFriendId, setSelectedFriendId] = useState("");
+  const [friends, setFriends] = useState<FriendDTO[]>([]);
+  const [selectedFriendId, setSelectedFriendId] = useState(""); //if i see the word iso again i will jump off a cliff
+
   const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("00:00");
-  const [endTime, setEndTime] = useState("00:00");
   const [duration, setDuration] = useState("60");
+
   const [workStart, setWorkStart] = useState("09:00");
   const [workEnd, setWorkEnd] = useState("17:00");
   const [timezone, setTimezone] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<Suggestion | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [meetingTitle, setMeetingTitle] = useState("");
-  const [meetingLocation, setMeetingLocation] = useState("");
-  const [meetingDescription, setMeetingDescription] = useState("");
+
+  //currently logged in user id from localStorage
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadFriends();
-    // Set default timezone
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setTimezone(userTimezone);
-    // Set default date to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setDate(tomorrow.toISOString().split("T")[0]);
+    (async () => {
+      try {
+        const { friends } = await getFriendsReal();
+        // normalize _id 
+        setFriends(friends.map((f) => ({ ...f, _id: String((f as any)._id) })));
+      } catch (e) {
+        console.error("Failed to load friends:", e);
+      }
+    })();
+
+    try {
+      //one of these have got to work
+      const storedUserString =
+        localStorage.getItem("currentUser") ??
+        localStorage.getItem("user") ??
+        localStorage.getItem("user_data");
+
+      if (!storedUserString) {
+        console.warn("No currentUser found in localStorage");
+      } else {
+        const storedUser = JSON.parse(storedUserString);
+        const id =
+          storedUser._id ?? storedUser.id ?? storedUser.userId ?? null;
+
+        if (id) {
+          setCurrentUserId(String(id));
+        } else {
+          console.warn(
+            "currentUser object found in localStorage but has no id field",
+            storedUser
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Failed to read currentUser from localStorage:", err);
+    }
+
+    //mr worldwide 
+    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    setDate(t.toISOString().split("T")[0]);
   }, []);
 
-  async function loadFriends() {
-    try {
-      const response = await getFriends();
-      setFriends(response.friends);
-    } catch (error) {
-      console.error("Failed to load friends:", error);
-    }
-  }
-
   async function handleFindTime() {
-  if (!selectedFriendId || !date || !startTime || !endTime || !timezone) {
-    toast.error("Please fill in all fields");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    // TODO: replace with the logged-in user's id when auth is wired
-    const userA = "690004f1ec266b7e400f97ba";
-    const userB = "690a0e84cb46c82f3475fe4c";
-
-    const resp = await availabilityFirst({
-      userA,
-      userB,
-      date,               // yyyy-mm-dd
-      startTime,          // HH:mm (meeting window start)
-      endTime,            // HH:mm (meeting window end)
-      tz: timezone,       // e.g., America/New_York
-      minutes: parseInt(duration, 10),
-      workStart,          // HH:mm (user workday start)
-      workEnd,            // HH:mm (user workday end)
-    });
-
-    if (resp.error) throw new Error(resp.error);
-
-    // Normalize single slot
-    const first =
-      resp.firstSlot ??
-      (resp.slotStart && resp.slotEnd ? { start: resp.slotStart, end: resp.slotEnd } : null) ??
-      (Array.isArray(resp.slots) ? resp.slots[0] ?? null : null);
-
-    if (first && first.start && first.end) {
-      setSuggestions([{ start: first.start, end: first.end }]);
-      setShowSuggestions(true);
-      toast.success("Found an available time!");
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(true);
-      toast.info("No available times found in this window");
-    }
-  } catch (err: any) {
-    toast.error(err?.message || "Failed to find available times");
-  } finally {
-    setLoading(false);
-  }
-}
-
-
-  function handleSelectSlot(slot: Suggestion) {
-    setSelectedSlot(slot);
-    setShowConfirmDialog(true);
-    // Pre-fill meeting title with friend name
-    const friend = friends.find((f) => f.friendId === selectedFriendId);
-    if (friend) {
-      setMeetingTitle(`Meeting with ${friend.nickname}`);
-    }
-  }
-
-  async function handleConfirmMeeting() {
-    if (!selectedSlot || !meetingTitle) {
-      toast.error("Please enter a meeting title");
+    if (!selectedFriendId || !date) {
+      toast.error("Please fill in all fields");
       return;
     }
 
+    if (!currentUserId) {
+      toast.error("You must be logged in before finding a time.");
+      return;
+    }
+
+    setLoading(true);
+
+    // full-day window for the API
+    const apiStartTime = "00:00";
+    const apiEndTime = "23:59";
+    const durationMinutes = parseInt(duration, 10) || 30;
+
     try {
-      await createEvent({
-        friendId: selectedFriendId,
-        title: meetingTitle,
-        start: selectedSlot.start,
-        end: selectedSlot.end,
-        location: meetingLocation,
-        description: meetingDescription,
+      const userA = currentUserId; // logged-in user
+      const userB = selectedFriendId; // friend from dropdown
+
+      const resp: any = await availabilityFirst({
+        userA,
+        userB,
+        date, // yyyy-mm-dd
+        startTime: apiStartTime, // HH:mm
+        endTime: apiEndTime, // HH:mm
+        tz: timezone,
+        minutes: durationMinutes,
+        workStart, // HH:mm
+        workEnd, // HH:mm
       });
 
-      toast.success("Meeting created and added to both calendars!");
-      setShowConfirmDialog(false);
-      setShowSuggestions(false);
-      setSuggestions([]);
-      setSelectedSlot(null);
-      setMeetingTitle("");
-      setMeetingLocation("");
-      setMeetingDescription("");
-    } catch (error) {
-      toast.error("Failed to create meeting");
+      console.log("availabilityFirst resp", resp);
+
+      // If backend says "no slot", show empty UI
+      if (resp.ok === false && resp.error === "no_slot") {
+        setSuggestions([]);
+        setShowSuggestions(true);
+        toast.info("No available times found in this window");
+        return;
+      }
+
+      // any other error string is a real error
+      if (resp.error && resp.error !== "no_slot") {
+        throw new Error(resp.error);
+      }
+
+      // normalize all the possible shapes into one "first slot"
+      const first =
+        resp.slot ??
+        resp.firstSlot ??
+        (resp.slotStart && resp.slotEnd
+          ? { start: resp.slotStart, end: resp.slotEnd }
+          : null) ??
+        (Array.isArray(resp.slots) ? resp.slots[0] ?? null : null);
+
+      if (first && first.start && first.end) {
+        const slot: Suggestion = { start: first.start, end: first.end };
+        setSuggestions([slot]);
+        setShowSuggestions(true);
+        toast.success("Found an available time!");
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(true);
+        toast.info("No available times found in this window");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to find available times");
+    } finally {
+      setLoading(false);
     }
   }
 
-  function formatTime(isoString: string): string {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString("en-US", {
+  function formatTime(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
   }
 
-  function formatDate(isoString: string): string {
-    const date = new Date(isoString);
-    return date.toLocaleDateString("en-US", {
+  function formatDate(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
     });
   }
 
-  const selectedFriend = friends.find((f) => f.friendId === selectedFriendId);
+  const selectedFriend = friends.find((f) => f._id === selectedFriendId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -174,14 +198,18 @@ export function ScheduleCombine() {
           <div className="flex items-center gap-3 mb-4">
             <SundialIcon className="w-10 h-10 text-[#D4AF37]" />
             <div>
-              <h1 className="text-[#D4AF37] tracking-wide">Find the Perfect Time</h1>
-              <p className="text-[#C5A572]">Combine schedules to discover your Kairos</p>
+              <h1 className="text-[#D4AF37] tracking-wide">
+                Find the Perfect Time
+              </h1>
+              <p className="text-[#C5A572]">
+                Combine schedules to discover your Kairos
+              </p>
             </div>
           </div>
           <EgyptianBorder className="my-4" />
         </div>
 
-        {/* Main Form */}
+        {/* Form / Results */}
         {!showSuggestions ? (
           <PapyrusCard>
             <CardHeader>
@@ -194,26 +222,36 @@ export function ScheduleCombine() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Friend Selection */}
+              {/* Friend */}
               <div className="space-y-2">
                 <Label htmlFor="friend" className="text-[#1B4B5A]">
                   Select Friend
                 </Label>
-                <Select value={selectedFriendId} onValueChange={setSelectedFriendId}>
+                <Select
+                  value={selectedFriendId}
+                  onValueChange={setSelectedFriendId}
+                >
                   <SelectTrigger className="bg-white border-[#D4AF37]">
                     <SelectValue placeholder="Choose a friend..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {friends.map((friend) => (
-                      <SelectItem key={friend.friendId} value={friend.friendId}>
-                        {friend.nickname} ({friend.friend.email})
-                      </SelectItem>
-                    ))}
+                    {friends.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-[#2C6E7E]">
+                        No friends yet
+                      </div>
+                    ) : (
+                      friends.map((f) => (
+                        <SelectItem key={f._id} value={f._id}>
+                          {nameOf(f)}
+                          {f.email ? ` (${f.email})` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Date Selection */}
+              {/* Date */}
               <div className="space-y-2">
                 <Label htmlFor="date" className="text-[#1B4B5A]">
                   Date
@@ -225,34 +263,6 @@ export function ScheduleCombine() {
                   onChange={(e) => setDate(e.target.value)}
                   className="bg-white border-[#D4AF37]"
                 />
-              </div>
-
-              {/* Time Window */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startTime" className="text-[#1B4B5A]">
-                    Start Time
-                  </Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="bg-white border-[#D4AF37]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endTime" className="text-[#1B4B5A]">
-                    End Time
-                  </Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="bg-white border-[#D4AF37]"
-                  />
-                </div>
               </div>
 
               {/* Duration */}
@@ -282,7 +292,7 @@ export function ScheduleCombine() {
                   <Input
                     id="workStart"
                     type="time"
-                    value={startTime}
+                    value={workStart}
                     onChange={(e) => setWorkStart(e.target.value)}
                     className="bg-white border-[#D4AF37]"
                   />
@@ -294,7 +304,7 @@ export function ScheduleCombine() {
                   <Input
                     id="workEnd"
                     type="time"
-                    value={endTime}
+                    value={workEnd}
                     onChange={(e) => setWorkEnd(e.target.value)}
                     className="bg-white border-[#D4AF37]"
                   />
@@ -308,7 +318,6 @@ export function ScheduleCombine() {
                 </Label>
                 <Input
                   id="timezone"
-                  type="text"
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
                   className="bg-white border-[#D4AF37]"
@@ -316,7 +325,7 @@ export function ScheduleCombine() {
                 />
               </div>
 
-              {/* Submit Button */}
+              {/* Submit */}
               <Button
                 onClick={handleFindTime}
                 disabled={loading || !selectedFriendId}
@@ -334,19 +343,21 @@ export function ScheduleCombine() {
             </CardContent>
           </PapyrusCard>
         ) : (
-          /* Suggestions View */
           <div className="space-y-6">
-            {/* Header with friend info */}
             <PapyrusCard>
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
-                      {selectedFriend?.nickname.charAt(0).toUpperCase()}
+                      {(
+                        nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
+                        "?"
+                      ).toUpperCase()}
                     </div>
                     <div>
                       <h3 className="text-[#1B4B5A]">
-                        Meeting with {selectedFriend?.nickname}
+                        Meeting with{" "}
+                        {selectedFriend ? nameOf(selectedFriend) : "Friend"}
                       </h3>
                       <p className="text-[#2C6E7E]">
                         {formatDate(suggestions[0]?.start || date)}
@@ -364,36 +375,33 @@ export function ScheduleCombine() {
               </CardContent>
             </PapyrusCard>
 
-            {/* Suggestions List */}
             <div>
               <h2 className="text-[#D4AF37] mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Available Time Slots ({suggestions.length})
+                <Clock className="w-5 h-5" /> Available Time Slots (
+                {suggestions.length})
               </h2>
               <div className="space-y-3">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((s, i) => (
                   <PapyrusCard
-                    key={index}
-                    className="cursor-pointer hover:shadow-xl transition-shadow"
-                    onClick={() => handleSelectSlot(suggestion)}
+                    key={i}
+                    className="hover:shadow-xl transition-shadow"
                   >
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex flex-col items-center justify-center text-[#1B4B5A]">
                             <span className="text-xs">Slot</span>
-                            <span>{index + 1}</span>
+                            <span>{i + 1}</span>
                           </div>
                           <div>
                             <p className="text-[#1B4B5A]">
-                              {formatTime(suggestion.start)} - {formatTime(suggestion.end)}
+                              {formatTime(s.start)} - {formatTime(s.end)}
                             </p>
                             <p className="text-[#2C6E7E]">
                               {duration} minute meeting
                             </p>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-[#D4AF37]" />
                       </div>
                     </CardContent>
                   </PapyrusCard>
@@ -415,80 +423,6 @@ export function ScheduleCombine() {
           </div>
         )}
       </div>
-
-      {/* Confirm Meeting Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="bg-[#F5E6D3] border-2 border-[#D4AF37] max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#1B4B5A] flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-              Confirm Meeting
-            </DialogTitle>
-            <DialogDescription className="text-[#2C6E7E]">
-              {selectedSlot && (
-                <>
-                  {formatDate(selectedSlot.start)} at {formatTime(selectedSlot.start)} -{" "}
-                  {formatTime(selectedSlot.end)}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-[#1B4B5A]">
-                Meeting Title *
-              </Label>
-              <Input
-                id="title"
-                value={meetingTitle}
-                onChange={(e) => setMeetingTitle(e.target.value)}
-                className="bg-white border-[#D4AF37]"
-                placeholder="e.g., Coffee catch-up"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location" className="text-[#1B4B5A]">
-                Location (optional)
-              </Label>
-              <Input
-                id="location"
-                value={meetingLocation}
-                onChange={(e) => setMeetingLocation(e.target.value)}
-                className="bg-white border-[#D4AF37]"
-                placeholder="e.g., Zoom, Cafe, Office"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-[#1B4B5A]">
-                Description (optional)
-              </Label>
-              <Input
-                id="description"
-                value={meetingDescription}
-                onChange={(e) => setMeetingDescription(e.target.value)}
-                className="bg-white border-[#D4AF37]"
-                placeholder="Add notes or agenda..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-              className="border-[#C5A572] text-[#2C6E7E]"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmMeeting}
-              disabled={!meetingTitle}
-              className="bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
-            >
-              Confirm & Add to Calendars
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

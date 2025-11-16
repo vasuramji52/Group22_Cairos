@@ -52,6 +52,7 @@ export interface AvailabilityFirstResponse {
   error?: string;
 }
 
+
 export async function availabilityFirst(params: AvailabilityFirstParams): Promise<AvailabilityFirstResponse> {
   const {
     userA, userB, date, startTime, endTime, tz, minutes, workStart, workEnd,
@@ -61,6 +62,10 @@ export async function availabilityFirst(params: AvailabilityFirstParams): Promis
   const startISO = new Date(`${date}T${startTime}:00`).toISOString();
   const endISO   = new Date(`${date}T${endTime}:00`).toISOString();
 
+  // convert "09:00" -> "9", "17:00" -> "17"
+  const workStartHour = workStart.split(":")[0]; // "09" -> "09"
+  const workEndHour   = workEnd.split(":")[0];   // "17" -> "17"
+
   const qs = new URLSearchParams({
     userA,
     userB,
@@ -68,9 +73,22 @@ export async function availabilityFirst(params: AvailabilityFirstParams): Promis
     start: startISO,
     end: endISO,
     tz,
-    workStart,
-    workEnd,
+    workStart: String(Number(workStartHour)), // "09" -> "9"
+    workEnd:   String(Number(workEndHour)),   // "17" -> "17"
   });
+
+  console.log("🔵 availabilityFirst → sending:", {
+  userA,
+  userB,
+  date,
+  startTime,
+  endTime,
+  tz,
+  minutes,
+  workStart,
+  workEnd,
+  url: `/api/availability/first?${params.toString()}`
+});
 
   const res = await fetch(`${baseUrl}/api/availability/first?${qs.toString()}`);
   if (!res.ok) {
@@ -79,3 +97,5 @@ export async function availabilityFirst(params: AvailabilityFirstParams): Promis
   }
   return res.json();
 }
+
+
