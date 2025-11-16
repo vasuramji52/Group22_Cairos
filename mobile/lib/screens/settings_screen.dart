@@ -3,7 +3,7 @@ import '../theme.dart';
 import '../styles/card_ui_styles.dart';
 import '../services/api_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../screens/dashboard_screen.dart';
+import '../models/user.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

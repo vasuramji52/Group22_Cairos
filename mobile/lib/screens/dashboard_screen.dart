@@ -80,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final fetchedUser = await ApiService.getMeReal();
       if (fetchedUser != null) {
         setState(() {
-          user = fetchedUser;
+          user = fetchedUser as User?;
           loading = false;
         });
 

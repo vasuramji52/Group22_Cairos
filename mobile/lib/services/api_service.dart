@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
-import '../screens/dashboard_screen.dart';
+import '../models/user.dart';
 
 class ApiService {
   /// 👇 Use the production API when deployed
@@ -10,7 +10,8 @@ class ApiService {
 
   /// 👇 Use local server when testing on an Android emulator
   /// (Flutter uses 10.0.2.2 instead of localhost)
-  static const String localBaseUrl = 'http://localhost:5000/api';
+  //static const String localBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String localBaseUrl = 'http://192.168.86.32:5000/api';
 
   /// 👇 Choose the correct one automatically
   static const bool useLocal = true; // change to false for production
@@ -73,41 +74,69 @@ class ApiService {
     Map<String, dynamic>? body,
     String method = 'GET',
   }) async {
-    // Get token from secure storage
     final token = await storage.read(key: 'token_data');
 
     final defaultHeaders = {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
-      if (headers != null) ...headers,
+      ...?headers,
     };
 
     final uri = Uri.parse('$baseUrl$path');
 
-    http.Response response;
-
     try {
-      
-      response = await http.get(uri, headers: defaultHeaders);
-      
+      late http.Response response;
 
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(uri, headers: defaultHeaders);
+          break;
+
+        case 'POST':
+          response = await http.post(
+            uri,
+            headers: defaultHeaders,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+
+        case 'PUT':
+          response = await http.put(
+            uri,
+            headers: defaultHeaders,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+
+        case 'DELETE':
+          response = await http.delete(
+            uri,
+            headers: defaultHeaders,
+            body: jsonEncode(body ?? {}),
+          );
+          break;
+
+        default:
+          throw Exception("Unsupported HTTP method: $method");
+      }
+
+      // Handle token expiry → auto-logout
       if (response.statusCode == 401) {
-        // Token invalid / not logged in → redirect
         await storage.delete(key: 'token_data');
-        // Navigate to login screen (replace with your Navigator logic)
-        // Note: Cannot redirect like in browser; use Navigator in Flutter
-        throw Exception('Unauthorized, navigate to login');
+        throw Exception("Unauthorized — redirect user to login.");
       }
 
       return response;
     } catch (e) {
+      debugPrint("API Error: $e");
       rethrow;
     }
   }
 
   static Future<User?> getMeReal() async {
     try {
-      final res = await api('/me'); // GET by default
+      final res = await api('/me');
+
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         return User.fromJson(data['user']);
