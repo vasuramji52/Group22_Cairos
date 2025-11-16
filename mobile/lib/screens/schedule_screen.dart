@@ -1,56 +1,37 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../styles/card_ui_styles.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ScheduleScreen extends StatelessWidget {
   const ScheduleScreen({super.key});
 
+  final List<Map<String, String>> schedule = const [
+    {'day': 'Monday', 'time': '2:00 PM', 'title': 'Team Standup'},
+    {'day': 'Wednesday', 'time': '10:00 AM', 'title': 'Project Review'},
+    {'day': 'Friday', 'time': '3:30 PM', 'title': 'Client Call'},
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkTeal,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Find the Perfect Time",
-                style: TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TopBanner(
+              title: 'Find the Perfect Time',
+              subtitle: 'Combine schedules to discover your Kairos',
+              icon: const Icon(
+                LucideIcons.clock,
+                color: AppColors.gold,
+                size: 50,
               ),
-              const Text(
-                "Combine schedules to discover your Kairos",
-                style: TextStyle(color: AppColors.bronze),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextField(
-                decoration: InputDecoration(
-                  hintText: "Select friend...",
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.9),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentTeal,
-                  foregroundColor: AppColors.gold,
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: const Text("Find Available Times"),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+            Column(children: const [EgyptianBorder(), SizedBox(height: 16)]),
+          ],
         ),
       ),
     );
