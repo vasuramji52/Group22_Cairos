@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/bottom_nav.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import 'auth_page_layout.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'dart:convert';
+import 'card_ui.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +30,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (response.statusCode == 200) {
       setState(() => message = 'Login successful!');
-      // navigate to your home page
+
+      final token=(json.decode(response.body))['accessToken'] as String;
+      await ApiService.storeToken(token);
+
+      // navigate to CardUI page on success
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const BottomNav()),
+      );
+      
+      return;
+      
     } else {
       // Decode backend error message
       String errorMsg = 'Login failed. Please try again.';

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
+import 'package:mobile/screens/bottom_nav.dart';
 
 // Screens
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/verified_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/reset_password_screen.dart';
@@ -31,7 +33,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initDeepLinkHandling() async {
     _appLinks = AppLinks();
 
-    // 🚀 COLD START: app launched from a link
+    // -------- COLD START --------
     try {
       final Uri? initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
@@ -41,11 +43,11 @@ class _MyAppState extends State<MyApp> {
       debugPrint('Error reading initial link: $e');
     }
 
-    // 🔥 WARM STATE: app already open, receives a link
+    // -------- WARM STATE --------
     _appLinks.uriLinkStream.listen(
       (Uri? uri) {
         if (uri != null) {
-          _handleIncomingLink(uri);
+          _navigateFromDeepLink(uri);
         }
       },
       onError: (err) {
@@ -54,22 +56,16 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  /// 💡 Central place to route deep links
+  /// Deep link handler for COLD start
   void _handleIncomingLink(Uri uri) {
     final link = uri.toString();
-    debugPrint('🔗 Incoming deep link: $link');
+    debugPrint('🔗 Cold-start deep link: $link');
 
-    // ---- EMAIL VERIFICATION ----
-    // You’re redirecting to: cairosapp://verified?verified=1
     if (link.contains('verified=1')) {
-      setState(() {
-        _startScreen = const VerifiedScreen();
-      });
+      setState(() => _startScreen = const VerifiedScreen());
       return;
     }
 
-    // ---- RESET PASSWORD ----
-    // For example: cairosapp://reset-password?uid=...&token=...
     if (link.contains('reset')) {
       final uid = uri.queryParameters['uid'];
       final token = uri.queryParameters['token'];
@@ -81,15 +77,52 @@ class _MyAppState extends State<MyApp> {
       }
       return;
     }
+  }
 
-    // Fallback if link is unknown → go to login
-    setState(() {
-      _startScreen = const LoginScreen();
-    });
+  /// Deep link handler while app is running
+  void _navigateFromDeepLink(Uri uri) {
+    final link = uri.toString();
+    debugPrint('🔥 Warm-state deep link: $link');
+
+    if (link.contains('verified=1')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const VerifiedScreen()),
+      );
+      return;
+    }
+
+    if (link.contains('reset')) {
+      final uid = uri.queryParameters['uid'];
+      final token = uri.queryParameters['token'];
+
+      if (uid != null && token != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResetPasswordScreen(uid: uid, token: token),
+          ),
+        );
+      }
+      return;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: _startScreen);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+
+      // IMPORTANT: Use _startScreen instead of initialRoute
+      home: _startScreen,
+
+      routes: {
+        '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+        '/forgot': (_) => const ForgotPasswordScreen(),
+        '/reset-password': (_) => const ResetPasswordScreen(uid: '', token: ''),
+        '/dashboard': (_) => const BottomNav(),
+      },
+    );
   }
 }
