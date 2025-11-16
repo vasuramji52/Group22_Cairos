@@ -5,7 +5,16 @@ import 'package:flutter/material.dart';
 import '../screens/dashboard_screen.dart';
 
 class ApiService {
-  static const baseUrl = 'http://localhost:5000/api';
+  /// 👇 Use the production API when deployed
+  static const String prodBaseUrl = 'https://api.vasupradha.xyz/api';
+
+  /// 👇 Use local server when testing on an Android emulator
+  /// (Flutter uses 10.0.2.2 instead of localhost)
+  static const String localBaseUrl = 'http://localhost:5000/api';
+
+  /// 👇 Choose the correct one automatically
+  static const bool useLocal = true; // change to false for production
+  static String get baseUrl => useLocal ? localBaseUrl : prodBaseUrl;
 
   // Use secure storage for storing token (instead of localStorage)
   static final storage = FlutterSecureStorage();
@@ -27,7 +36,10 @@ class ApiService {
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-platform': 'flutter', // <— lets backend know this is from mobile
+      },
       body: jsonEncode({
         'firstName': firstName,
         'lastName': lastName,
@@ -41,8 +53,8 @@ class ApiService {
   static Future<http.Response> forgotPassword(String email) async {
     final response = await http.post(
       Uri.parse('$baseUrl/request-password-reset'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
+      headers: {'Content-Type': 'application/json', 'x-platform': 'flutter'},
+      body: jsonEncode({'email': email, 'platform': 'flutter'}),
     );
     return response;
   }
@@ -105,5 +117,23 @@ class ApiService {
       debugPrint('Error fetching user: $e');
       return null;
     }
+  }
+
+  static Future<http.Response> confirmResetPassword(
+    String uid,
+    String token,
+    String newPassword,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/confirm-reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'uid': uid,
+        'token': token,
+        'newPassword': newPassword,
+      }),
+    );
+
+    return response;
   }
 }

@@ -2,13 +2,12 @@ const bcrypt = require('bcryptjs');
 const jwtLib = require('./createJWT.js');
 const { ObjectId } = require('mongodb');
 const { sendMail } = require('./mail');
-const { issueToken, consumeToken, validateToken  } = require('./tokenStore');
+const { issueToken, consumeToken, validateToken } = require('./tokenStore');
 
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-const BACKEND_BASE_URL  = process.env.BACKEND_BASE_URL  || 'http://localhost:5000/api';
+const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL || 'http://localhost:5000/api';
 
-exports.setApp = function (app, client) 
-{
+exports.setApp = function (app, client) {
   const db = client.db('COP4331Cards');
 
   // health check
@@ -17,8 +16,7 @@ exports.setApp = function (app, client)
   //
   // REGISTER (now sends verify email)
   //
-  app.post('/api/register', async (req, res) => 
-  {
+  app.post('/api/register', async (req, res) => {
     try {
       const { firstName, lastName, email, password } = req.body;
 
@@ -54,8 +52,27 @@ exports.setApp = function (app, client)
       // make a verification token that expires in 15 minutes
       const { raw: verifyToken } = await issueToken(db, { userId, type: 'verify', minutes: 15 });
 
-      // build magic link that hits our verify route
-      const link = `${BACKEND_BASE_URL}/verify-email-link?uid=${userId.toString()}&token=${verifyToken}`;
+      // Detect platform from request headers or body
+      const platform = req.headers['x-platform'] || req.body.platform || 'web';
+
+      // Choose which base to use
+      let verifyBase;
+      if (platform === 'flutter') {
+        verifyBase = process.env.MOBILE_VERIFY_DEEP_LINK || 'cairosapp://verified';
+      } else {
+        verifyBase = FRONTEND_BASE_URL
+      }
+
+      // Now generate the verification link (this goes to your backend verify route)
+      const link = `${BACKEND_BASE_URL}/verify-email-link?uid=${userId.toString()}&token=${verifyToken}&platform=${platform}`;
+
+
+      console.log('ENV BACKEND_BASE_URL:', process.env.BACKEND_BASE_URL);
+      console.log('CONST BACKEND_BASE_URL:', BACKEND_BASE_URL);
+      console.log('ENV FRONTEND_BASE_URL:', process.env.FRONTEND_BASE_URL);
+      console.log('ENV MOBILE_VERIFY_DEEP_LINK:', process.env.MOBILE_VERIFY_DEEP_LINK);
+      console.log('Register platform:', platform);
+      console.log('Composed verify link:', link);
 
       // send email
       await sendMail({
@@ -74,9 +91,8 @@ exports.setApp = function (app, client)
         ok: true,
         message: 'Registered. Check your email to verify.'
       });
-    } 
-    catch (e) 
-    {
+    }
+    catch (e) {
       console.error('Register error:', e);
       return res.status(500).json({ error: e.toString() });
     }
@@ -86,55 +102,61 @@ exports.setApp = function (app, client)
   //
   app.get('/api/verify-email-link', async (req, res) => {
     try {
-      const { uid, token } = req.query;
+      const { uid, token, platform } = req.query;  // ✅ add platform here
 
       if (!uid || !token) {
         return res.status(400).send('Missing uid or token');
       }
 
-      // find user
       const user = await db.collection('users').findOne({ _id: new ObjectId(uid) });
       if (!user) return res.status(404).send('User not found');
 
-      // already verified -> just bounce them to frontend with verified=1
+      const verifyBase =
+        platform === 'flutter'
+          ? process.env.MOBILE_VERIFY_DEEP_LINK || 'cairosapp://verified'
+          : FRONTEND_BASE_URL
+
+      console.log('Verify handler platform:', platform);
+      console.log('VerifyBase chosen:', verifyBase);
+
+      // already verified
       if (user.isVerified === true) {
-        return res.redirect(`${FRONTEND_BASE_URL}/?verified=1`);
+        console.log(`ℹ️ User ${uid} already verified — redirecting to ${verifyBase}`);
+        return res.redirect(`${verifyBase}?verified=1`);
       }
 
-      // check token
       const result = await consumeToken(db, {
         userId: uid,
         type: 'verify',
-        raw: token
+        raw: token,
       });
 
       if (!result.ok) {
         return res.status(400).send('Verification failed or expired.');
       }
 
-      // mark verified
       await db.collection('users').updateOne(
         { _id: user._id },
         { $set: { isVerified: true, updatedAt: new Date() } }
       );
 
-      // send them back to frontend
-      return res.redirect(`${FRONTEND_BASE_URL}/?verified=1`);
+      // ✅ now redirect based on platform
+      return res.redirect(`${verifyBase}?verified=1`);
     } catch (e) {
       console.error('Verify link error:', e);
       return res.status(500).send('Server error');
     }
   });
 
+
   //
   // LOGIN (mostly same, still blocks unverified)
   //
-  app.post('/api/login', async (req, res) => 
-  {
+  app.post('/api/login', async (req, res) => {
     console.log('Reached /api/login route');
 
     try {
-      const { email, password } = req.body;      
+      const { email, password } = req.body;
       const normalizedEmail = String(email).toLowerCase().trim();
 
       if (!email || !password)
@@ -155,121 +177,143 @@ exports.setApp = function (app, client)
       const token = jwtLib.createToken(user.firstName, user.lastName, user._id);
 
       return res.status(200).json(token); // { accessToken: '...' }
-    } 
-    catch (e) 
-    {
+    }
+    catch (e) {
       console.error('Login error:', e);
       return res.status(500).json({ error: e.toString() });
     }
   });
 
   app.post('/api/request-password-reset', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'missing_email' });
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'missing_email' });
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await db.collection('users').findOne({ email: normalizedEmail });
+      const normalizedEmail = email.toLowerCase().trim();
+      const user = await db.collection('users').findOne({ email: normalizedEmail });
 
-    // always respond 200 to avoid leaking existence
-    if (!user) return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
+      // always respond 200 to avoid leaking existence
+      if (!user) return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
 
-    // issue a 15-minute reset token
-    const { raw: resetToken } = await issueToken(db, { userId: user._id, type: 'reset', minutes: 15 });
+      // issue a 15-minute reset token
+      const { raw: resetToken } = await issueToken(db, { userId: user._id, type: 'reset', minutes: 15 });
 
-    const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}`;
+      const platform = req.headers['x-platform'] || req.body.platform || 'web';
 
-    await sendMail({
-      to: normalizedEmail,
-      subject: 'Reset your password',
-      html: `
+      let resetBase;
+      if (platform === 'flutter') {
+        resetBase = process.env.MOBILE_RESET_DEEP_LINK || 'cairosapp://reset';
+      } else {
+        resetBase = FRONTEND_BASE_URL;
+      }
+
+      const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${resetToken}&platform=${platform}`;
+
+      await sendMail({
+        to: normalizedEmail,
+        subject: 'Reset your password',
+        html: `
         <p>Hi ${user.firstName},</p>
         <p>You requested to reset your password. Click below:</p>
         <p><a href="${link}">Reset your password</a></p>
         <p>This link expires in 15 minutes.</p>
       `
-    });
+      });
 
-    return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
-  } catch (e) {
-    console.error('Request reset error:', e);
-    return res.status(500).json({ error: e.toString() });
-  }
-});
+      return res.status(200).json({ ok: true, message: 'If that email exists, a link was sent.' });
+    } catch (e) {
+      console.error('Request reset error:', e);
+      return res.status(500).json({ error: e.toString() });
+    }
+  });
 
-app.get('/api/reset-password-link', async (req, res) => {
-  try {
-    const { uid, token } = req.query;
-    if (!uid || !token) return res.status(400).send('Missing uid or token');
+  app.get('/api/reset-password-link', async (req, res) => {
+    try {
+      const { uid, token, platform } = req.query;
+      if (!uid || !token) return res.status(400).send('Missing uid or token');
 
 
-    const ok = await validateToken(db, { userId: uid, type: 'reset', raw: token });
-    if (!ok.ok) return res.status(400).send('Reset link invalid or expired');
+      const ok = await validateToken(db, { userId: uid, type: 'reset', raw: token });
+      if (!ok.ok) return res.status(400).send('Reset link invalid or expired');
 
-    // Send them to your frontend page to enter a new password
-    return res.redirect(`${FRONTEND_BASE_URL}/reset-password?uid=${uid}&token=${token}`);
-  } catch (e) {
-    console.error('Reset link error:', e);
-    return res.status(500).send('Server error');
-  }
-});
+      // Choose redirect target
+      const resetBase =
+        platform === 'flutter'
+          ? process.env.MOBILE_RESET_DEEP_LINK || 'cairosapp://reset'
+          : FRONTEND_BASE_URL;
 
-app.post('/api/confirm-reset-password', async (req, res) => {
-  try {
-    const { uid, token, newPassword } = req.body;
-    if (!uid || !token || !newPassword)
-      return res.status(400).json({ error: 'missing_fields' });
+      console.log("Reset handler platform:", platform);
+      console.log("Reset redirect base:", resetBase);
 
-    // Basic policy – adjust as needed
-    if (String(newPassword).length < 8)
-      return res.status(400).json({ error: 'weak_password' });
+      // Redirect user to appropriate platform
+      if (platform === 'flutter') {
+        return res.redirect(`${resetBase}?uid=${uid}&token=${token}`);
+      } else {
+        return res.redirect(`${resetBase}/reset-password?uid=${uid}&token=${token}`);
+      }
 
-    // Now consume to prevent reuse
-    const result = await consumeToken(db, { userId: uid, type: 'reset', raw: token });
-    if (!result.ok) return res.status(400).json({ error: 'invalid_or_expired_token' });
+    } catch (e) {
+      console.error('Reset link error:', e);
+      return res.status(500).send('Server error');
+    }
+  });
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(uid) },
-      { $set: { passwordHash, updatedAt: new Date() } }
-    );
+  app.post('/api/confirm-reset-password', async (req, res) => {
+    try {
+      const { uid, token, newPassword } = req.body;
+      if (!uid || !token || !newPassword)
+        return res.status(400).json({ error: 'missing_fields' });
 
-    return res.status(200).json({ ok: true, message: 'Password updated successfully.' });
-  } catch (e) {
-    console.error('Confirm reset error:', e);
-    return res.status(500).json({ error: e.toString() });
-  }
-});
+      // Basic policy – adjust as needed
+      if (String(newPassword).length < 8)
+        return res.status(400).json({ error: 'weak_password' });
 
-/*app.post('/api/dev-reset-link', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'missing_email' });
+      // Now consume to prevent reuse
+      const result = await consumeToken(db, { userId: uid, type: 'reset', raw: token });
+      if (!result.ok) return res.status(400).json({ error: 'invalid_or_expired_token' });
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await db.collection('users').findOne({ email: normalizedEmail });
-    if (!user) return res.status(404).json({ error: 'user_not_found' });
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await db.collection('users').updateOne(
+        { _id: new ObjectId(uid) },
+        { $set: { passwordHash, updatedAt: new Date() } }
+      );
 
-    // issue a reset token for THIS user
-    const { raw } = await issueToken(db, {
-      userId: user._id,
-      type: 'reset',
-      minutes: 15
-    });
+      return res.status(200).json({ ok: true, message: 'Password updated successfully.' });
+    } catch (e) {
+      console.error('Confirm reset error:', e);
+      return res.status(500).json({ error: e.toString() });
+    }
+  });
 
-    const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${raw}`;
-
-    return res.status(200).json({
-      ok: true,
-      uid: user._id.toString(),
-      token: raw,
-      link
-    });
-  } catch (e) {
-    console.error('dev-reset-link error:', e);
-    return res.status(500).json({ error: e.toString() });
-  }
-}); */
+  /*app.post('/api/dev-reset-link', async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'missing_email' });
+  
+      const normalizedEmail = email.toLowerCase().trim();
+      const user = await db.collection('users').findOne({ email: normalizedEmail });
+      if (!user) return res.status(404).json({ error: 'user_not_found' });
+  
+      // issue a reset token for THIS user
+      const { raw } = await issueToken(db, {
+        userId: user._id,
+        type: 'reset',
+        minutes: 15
+      });
+  
+      const link = `${BACKEND_BASE_URL}/reset-password-link?uid=${user._id.toString()}&token=${raw}`;
+  
+      return res.status(200).json({
+        ok: true,
+        uid: user._id.toString(),
+        token: raw,
+        link
+      });
+    } catch (e) {
+      console.error('dev-reset-link error:', e);
+      return res.status(500).json({ error: e.toString() });
+    }
+  }); */
 
 
 };

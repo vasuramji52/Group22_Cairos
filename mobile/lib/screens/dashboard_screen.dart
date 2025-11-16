@@ -186,9 +186,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ElevatedButton(
                       onPressed: connecting ? null : handleConnectGoogle,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentTeal,
+                        backgroundColor: AppColors.darkTeal,
                         foregroundColor: AppColors.gold,
                         side: const BorderSide(color: AppColors.gold, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: Text(
                         connecting
@@ -214,10 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     const Text(
                       'Your Circle',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: AppColors.darkTeal,
-                      ),
+                      style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -267,10 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     const Text(
                       'Find Time',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: AppColors.darkTeal,
-                      ),
+                      style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
                     ),
                     const SizedBox(height: 8),
                     const Text(

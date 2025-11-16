@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/bottom_nav.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const CardUI()),
+        MaterialPageRoute(builder: (_) => const BottomNav()),
       );
       
       return;
