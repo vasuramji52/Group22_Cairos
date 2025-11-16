@@ -43,7 +43,10 @@ exports.setApp = function (app, client) {
         isVerified: false,
         google: { connected: false, accountId: null },
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        friends: [],
+        sentRequests: [],
+        receivedRequests: [],
       };
 
       const result = await db.collection('users').insertOne(newUser);
