@@ -18,6 +18,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   final TextEditingController _addController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   List<UIFriend> _friends = [];
   List<UIFriend> _incoming = [];
@@ -26,16 +27,25 @@ class _FriendsScreenState extends State<FriendsScreen> {
   bool _loading = true;
   bool _adding = false;
   bool _animateList = false;
+  bool _isSearchFocused = false;
 
   @override
   void initState() {
     super.initState();
     _loadFriends();
-    // small delay so items animate in after first frame
+
+    // Animate list in slightly after first build
     Future.delayed(const Duration(milliseconds: 120), () {
       if (mounted) {
         setState(() => _animateList = true);
       }
+    });
+
+    _searchFocusNode.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        _isSearchFocused = _searchFocusNode.hasFocus;
+      });
     });
   }
 
@@ -44,6 +54,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     _addController.dispose();
     _searchController.dispose();
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -187,14 +198,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
-  void _scrollToAddCard() {
-    _scrollController.animateTo(
-      200, // roughly where the add card is
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
-    );
-  }
-
   void _showAddFriendSheet() {
     final sheetController = TextEditingController();
     showModalBottomSheet(
@@ -270,6 +273,105 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  void _openPendingPanel() {
+    // If nothing pending, just show a snack and don’t open a blank panel
+    if (_incoming.isEmpty) {
+      _showSnack('No pending requests right now.');
+      return;
+    }
+
+    showGeneralDialog(
+      context: context,
+      barrierLabel: 'Pending requests',
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (ctx, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(ctx).size.width,
+              height: MediaQuery.of(ctx).size.height,
+              color: AppColors.darkTeal,
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: AppColors.gold,
+                            ),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Pending Requests',
+                            style: TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(
+                            Icons.inbox_outlined,
+                            color: AppColors.gold,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Accept or decline friend requests awaiting your response.',
+                        style: TextStyle(color: AppColors.bronze, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _incoming.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (ctx, index) {
+                          final f = _incoming[index];
+                          return _PendingRequestTile(
+                            friend: f,
+                            onAccept: () => _handleAccept(f.id),
+                            onDecline: () => _handleDecline(f.id),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (ctx, anim, secondaryAnim, child) {
+        final offsetAnimation = Tween<Offset>(
+          begin: const Offset(1.0, 0.0), // slide in from right
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
+
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredFriends;
@@ -294,42 +396,97 @@ class _FriendsScreenState extends State<FriendsScreen> {
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
             children: [
-              const Text(
-                'Your Circle',
-                style: TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header row with inbox icon + badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'Your Circle',
+                                  style: TextStyle(
+                                    color: AppColors.gold,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Manage your companions and connections',
+                                  style: TextStyle(color: AppColors.bronze),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.inbox_outlined,
+                                  size: 28,
+                                  color: AppColors.gold,
+                                ),
+                                tooltip: 'View pending requests',
+                                onPressed: _openPendingPanel,
+                              ),
+                              if (_incoming.isNotEmpty)
+                                Positioned(
+                                  right: 4,
+                                  top: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gold,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.darkTeal,
+                                        width: 1.3,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _incoming.length.toString(),
+                                      style: const TextStyle(
+                                        color: AppColors.darkTeal,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const EgyptianBorder(),
+                      const SizedBox(height: 16),
+
+                      // Transparent-on-idle search bar on dark teal
+                      _buildSearchBar(),
+
+                      const SizedBox(height: 16),
+
+                      // Friends list directly on blue background (no big card)
+                      _buildFriendsList(filtered),
+
+                      const SizedBox(height: 80), // space for FAB
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Manage your companions and connections',
-                style: TextStyle(color: AppColors.bronze),
-              ),
-              const SizedBox(height: 16),
-              const EgyptianBorder(),
-              const SizedBox(height: 16),
-
-              // Pending Requests Card
-              _buildPendingCard(),
-
-              const SizedBox(height: 16),
-
-              // Add Friend Card
-              _buildAddFriendCard(),
-
-              const SizedBox(height: 16),
-
-              // Search Card
-              _buildSearchCard(),
-
-              const SizedBox(height: 16),
-
-              // Friends List / Empty state
-              _buildFriendsList(filtered),
-
-              const SizedBox(height: 80), // space for FAB
             ],
           ),
         ),
@@ -337,213 +494,85 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildPendingCard() {
-    return PapyrusCard(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.group_add_outlined, color: AppColors.darkTeal),
-                SizedBox(width: 8),
-                Text(
-                  'Pending Requests',
-                  style: TextStyle(
-                    color: AppColors.darkTeal,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Accept or decline pending friend requests',
-              style: TextStyle(color: AppColors.accentTeal, fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Loading...',
-                  style: TextStyle(color: AppColors.accentTeal),
-                ),
-              )
-            else if (_incoming.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'No pending requests',
-                  style: TextStyle(color: AppColors.accentTeal),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  for (int i = 0; i < _incoming.length; i++)
-                    _AnimatedFriendRow(
-                      index: i,
-                      animate: _animateList,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: _PendingRequestTile(
-                          friend: _incoming[i],
-                          onAccept: () => _handleAccept(_incoming[i].id),
-                          onDecline: () => _handleDecline(_incoming[i].id),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-          ],
+  /// Search bar: transparent until focused; when focused → gold outline + soft glow (Style 1)
+  Widget _buildSearchBar() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: _isSearchFocused
+            ? Colors.white.withOpacity(0.06)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: _isSearchFocused ? AppColors.gold : Colors.transparent,
+          width: 1.3,
         ),
+        boxShadow: _isSearchFocused
+            ? [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.35),
+                  blurRadius: 10,
+                  spreadRadius: 0.5,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [],
       ),
-    );
-  }
-
-  Widget _buildAddFriendCard() {
-    return PapyrusCard(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(
-                  Icons.person_add_alt_1_outlined,
-                  color: AppColors.darkTeal,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Add New Friend',
-                  style: TextStyle(
-                    color: AppColors.darkTeal,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Add friends by their email address (they must have a Cairos account and be verified).',
-              style: TextStyle(color: AppColors.accentTeal, fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _addController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'friend@gmail.com',
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.gold),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.darkTeal),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _adding ? null : _handleAddFriend,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkTeal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: Text(
-                    _adding ? 'Adding...' : 'Add Friend',
-                    style: const TextStyle(color: AppColors.gold),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchCard() {
-    return PapyrusCard(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            const Icon(Icons.search, color: AppColors.accentTeal),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'Search friends...',
-                  border: InputBorder.none,
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: AppColors.accentTeal),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              focusNode: _searchFocusNode,
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: AppColors.beige),
+              decoration: const InputDecoration(
+                hintText: 'Search friends...',
+                hintStyle: TextStyle(color: AppColors.bronze),
+                border: InputBorder.none,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
+  /// Friends list: each friend is a clean rounded card with a papyrus-like background,
+  /// stacked on the dark teal background (no big outer card).
   Widget _buildFriendsList(List<UIFriend> filtered) {
     if (_loading) {
-      return PapyrusCard(
-        margin: EdgeInsets.zero,
-        child: const Padding(
+      return const Center(
+        child: Padding(
           padding: EdgeInsets.symmetric(vertical: 24),
-          child: Center(
-            child: CircularProgressIndicator(color: AppColors.darkTeal),
-          ),
+          child: CircularProgressIndicator(color: AppColors.beige),
         ),
       );
     }
 
     if (filtered.isEmpty) {
-      return PapyrusCard(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              AnkhIcon(size: 40, color: AppColors.gold),
-              SizedBox(height: 12),
-              Text(
-                'No friends yet',
-                style: TextStyle(color: AppColors.accentTeal, fontSize: 14),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Add friends by their email address to start finding the perfect time to meet.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.bronze, fontSize: 12),
-              ),
-            ],
-          ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            AnkhIcon(size: 40, color: AppColors.gold),
+            SizedBox(height: 12),
+            Text(
+              'No friends yet',
+              style: TextStyle(color: AppColors.beige, fontSize: 14),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Add friends by their email address to start finding the perfect time to meet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.bronze, fontSize: 12),
+            ),
+          ],
         ),
       );
     }
@@ -557,70 +586,78 @@ class _FriendsScreenState extends State<FriendsScreen> {
             animate: _animateList,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: PapyrusCard(
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: AppColors.gold,
-                        child: Text(
-                          filtered[i].nickname.isNotEmpty
-                              ? filtered[i].nickname[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            color: AppColors.darkTeal,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.beige.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.gold,
+                      child: Text(
+                        filtered[i].nickname.isNotEmpty
+                            ? filtered[i].nickname[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: AppColors.darkTeal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              filtered[i].nickname,
-                              style: const TextStyle(
-                                color: AppColors.darkTeal,
-                                fontWeight: FontWeight.w600,
-                              ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            filtered[i].nickname,
+                            style: const TextStyle(
+                              color: AppColors.darkTeal,
+                              fontWeight: FontWeight.w600,
                             ),
-                            if (filtered[i].firstName.isNotEmpty ||
-                                filtered[i].lastName.isNotEmpty)
-                              Text(
-                                '${filtered[i].firstName} ${filtered[i].lastName}'
-                                    .trim(),
-                                style: const TextStyle(
-                                  color: AppColors.accentTeal,
-                                  fontSize: 12,
-                                ),
-                              ),
+                          ),
+                          if (filtered[i].firstName.isNotEmpty ||
+                              filtered[i].lastName.isNotEmpty)
                             Text(
-                              filtered[i].email,
+                              '${filtered[i].firstName} ${filtered[i].lastName}'
+                                  .trim(),
                               style: const TextStyle(
-                                color: AppColors.bronze,
+                                color: AppColors.accentTeal,
                                 fontSize: 12,
                               ),
                             ),
-                          ],
-                        ),
+                          Text(
+                            filtered[i].email,
+                            style: const TextStyle(
+                              color: AppColors.bronze,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        onPressed: () => _handleRemoveFriend(filtered[i]),
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Color(0xFFC1440E),
-                        ),
+                    ),
+                    IconButton(
+                      onPressed: () => _handleRemoveFriend(filtered[i]),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Color(0xFFC1440E),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -688,7 +725,7 @@ class _AnimatedFriendRow extends StatelessWidget {
   }
 }
 
-/// Tile used inside the Pending Requests card.
+/// Tile used inside the Pending Requests panel.
 class _PendingRequestTile extends StatelessWidget {
   final UIFriend friend;
   final VoidCallback onAccept;
@@ -704,7 +741,7 @@ class _PendingRequestTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.gold.withOpacity(0.6)),
       ),
