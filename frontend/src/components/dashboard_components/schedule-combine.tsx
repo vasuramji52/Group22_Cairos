@@ -12,6 +12,7 @@ import { EgyptianBorder, PapyrusCard, SundialIcon } from "./egyptian-decorations
 import { getFriendsReal, type FriendDTO } from "../lib/friends.api";
 import { suggestSchedule, createEvent, type Suggestion } from "../lib/mock-api"; // still mock for now
 import { toast } from "sonner";
+import { markScheduleTaskComplete } from "../lib/getting-started";
 
 function nameOf(f: FriendDTO) {
   const n = `${(f.firstName ?? "").trim()} ${(f.lastName ?? "").trim()}`.trim();
@@ -102,6 +103,7 @@ export function ScheduleCombine() {
         description: meetingDescription,
       });
       toast.success("Meeting created!");
+      markScheduleTaskComplete();
       setShowConfirmDialog(false);
       setShowSuggestions(false);
       setSuggestions([]);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -15,6 +15,10 @@ import {
 } from "./egyptian-decorations";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { api, getMeReal } from "../lib/api";
+import {
+  getScheduleTaskComplete,
+  ONBOARDING_PROGRESS_EVENT,
+} from "../lib/getting-started";
 
 type User = {
   _id: string;
@@ -36,6 +40,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [hasScheduledMeeting, setHasScheduledMeeting] = useState(() =>
+    getScheduleTaskComplete()
+  );
 
   useEffect(() => {
     loadUser();
@@ -107,6 +114,26 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     }
   }
 
+  const userId = user?._id ?? null;
+
+  useEffect(() => {
+    setHasScheduledMeeting(getScheduleTaskComplete(userId));
+  }, [userId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handler: EventListener = () => {
+      setHasScheduledMeeting(getScheduleTaskComplete(userId));
+    };
+
+    window.addEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    return () => {
+      window.removeEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    };
+  }, [userId]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E]">
@@ -117,6 +144,35 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   const friendCount = Array.isArray(user?.friends) ? user.friends.length : 0;
   const hasFriends = friendCount > 0;
+  const calendarConnected = Boolean(user?.google.connected);
+
+  const gettingStartedSteps = useMemo(
+    () => [
+      {
+        id: 1,
+        complete: calendarConnected,
+        completedText: "Calendar connected",
+        pendingText: "Connect your Google Calendar to access your schedule",
+      },
+      {
+        id: 2,
+        complete: hasFriends,
+        completedText: `You have ${friendCount} ${
+          friendCount === 1 ? "friend" : "friends"
+        } in your circle`,
+        pendingText: "Add friends to your circle by their email address",
+      },
+      {
+        id: 3,
+        complete: hasScheduledMeeting,
+        completedText:
+          "You've combined schedules and found the perfect time to meet",
+        pendingText:
+          "Find the perfect time to meet by combining your schedules",
+      },
+    ],
+    [calendarConnected, friendCount, hasFriends, hasScheduledMeeting]
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -253,32 +309,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-[#2C6E7E]">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  {user?.google.connected ? "✓" : "1"}
+              {gettingStartedSteps.map((step) => (
+                <div className="flex items-start gap-3" key={step.id}>
+                  <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
+                    {step.complete ? "✓" : step.id}
+                  </div>
+                  <p>{step.complete ? step.completedText : step.pendingText}</p>
                 </div>
-                <p>
-                  {user?.google.connected
-                    ? "Calendar connected"
-                    : "Connect your Google Calendar to access your schedule"}
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  {hasFriends ? "✓" : "2"}
-                </div>
-                <p>
-                  {hasFriends
-                    ? `You have ${friendCount} ${friendCount === 1 ? "friend" : "friends"} in your circle`
-                    : "Add friends to your circle by their email address"}
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  3
-                </div>
-                <p>Find the perfect time to meet by combining your schedules</p>
-              </div>
+              ))}
             </div>
           </CardContent>
         </PapyrusCard>
