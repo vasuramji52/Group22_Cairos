@@ -630,16 +630,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (filtered[i].firstName.isNotEmpty ||
-                              filtered[i].lastName.isNotEmpty)
-                            Text(
-                              '${filtered[i].firstName} ${filtered[i].lastName}'
-                                  .trim(),
-                              style: const TextStyle(
-                                color: AppColors.accentTeal,
-                                fontSize: 12,
-                              ),
-                            ),
+                          // if (filtered[i].firstName.isNotEmpty ||
+                          //     filtered[i].lastName.isNotEmpty)
+                          //   Text(
+                          //     '${filtered[i].firstName} ${filtered[i].lastName}'
+                          //         .trim(),
+                          //     style: const TextStyle(
+                          //       color: AppColors.accentTeal,
+                          //       fontSize: 12,
+                          //     ),
+                          //   ),
                           Text(
                             filtered[i].email,
                             style: const TextStyle(
