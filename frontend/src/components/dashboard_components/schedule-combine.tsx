@@ -17,12 +17,22 @@ import {
   CardTitle,
 } from "../ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import {
   EgyptianBorder,
   PapyrusCard,
   SundialIcon,
 } from "./egyptian-decorations";
 import { getFriendsReal, type FriendDTO } from "../lib/friends.api";
-import { type Suggestion } from "../lib/mock-api"; 
+import { type Suggestion } from "../lib/mock-api";
 import { toast } from "sonner";
 import { availabilityFirst } from "../lib/api";
 
@@ -33,7 +43,7 @@ function nameOf(f: FriendDTO) {
 
 export function ScheduleCombine() {
   const [friends, setFriends] = useState<FriendDTO[]>([]);
-  const [selectedFriendId, setSelectedFriendId] = useState(""); //if i see the word iso again i will jump off a cliff
+  const [selectedFriendId, setSelectedFriendId] = useState("");
 
   const [date, setDate] = useState("");
   const [duration, setDuration] = useState("60");
@@ -44,16 +54,14 @@ export function ScheduleCombine() {
 
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false); // now controls modal
 
-  //currently logged in user id from localStorage
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const { friends } = await getFriendsReal();
-        // normalize _id 
         setFriends(friends.map((f) => ({ ...f, _id: String((f as any)._id) })));
       } catch (e) {
         console.error("Failed to load friends:", e);
@@ -61,7 +69,6 @@ export function ScheduleCombine() {
     })();
 
     try {
-      //one of these have got to work
       const storedUserString =
         localStorage.getItem("currentUser") ??
         localStorage.getItem("user") ??
@@ -87,7 +94,6 @@ export function ScheduleCombine() {
       console.error("Failed to read currentUser from localStorage:", err);
     }
 
-    //mr worldwide 
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     const t = new Date();
     t.setDate(t.getDate() + 1);
@@ -107,43 +113,39 @@ export function ScheduleCombine() {
 
     setLoading(true);
 
-    // full-day window for the API
     const apiStartTime = "00:00";
     const apiEndTime = "23:59";
     const durationMinutes = parseInt(duration, 10) || 30;
 
     try {
-      const userA = currentUserId; // logged-in user
-      const userB = selectedFriendId; // friend from dropdown
+      const userA = currentUserId;
+      const userB = selectedFriendId;
 
       const resp: any = await availabilityFirst({
         userA,
         userB,
-        date, // yyyy-mm-dd
-        startTime: apiStartTime, // HH:mm
-        endTime: apiEndTime, // HH:mm
+        date,
+        startTime: apiStartTime,
+        endTime: apiEndTime,
         tz: timezone,
         minutes: durationMinutes,
-        workStart, // HH:mm
-        workEnd, // HH:mm
+        workStart,
+        workEnd,
       });
 
       console.log("availabilityFirst resp", resp);
 
-      // If backend says "no slot", show empty UI
       if (resp.ok === false && resp.error === "no_slot") {
         setSuggestions([]);
-        setShowSuggestions(true);
+        setShowSuggestions(true); // open modal
         toast.info("No available times found in this window");
         return;
       }
 
-      // any other error string is a real error
       if (resp.error && resp.error !== "no_slot") {
         throw new Error(resp.error);
       }
 
-      // normalize all the possible shapes into one "first slot"
       const first =
         resp.slot ??
         resp.firstSlot ??
@@ -155,7 +157,7 @@ export function ScheduleCombine() {
       if (first && first.start && first.end) {
         const slot: Suggestion = { start: first.start, end: first.end };
         setSuggestions([slot]);
-        setShowSuggestions(true);
+        setShowSuggestions(true); // open modal
         toast.success("Found an available time!");
       } else {
         setSuggestions([]);
@@ -189,6 +191,18 @@ export function ScheduleCombine() {
   }
 
   const selectedFriend = friends.find((f) => f._id === selectedFriendId);
+  const firstSuggestion = suggestions[0];
+
+  const durationLabel =
+    duration === "30"
+      ? "30 minute meeting"
+      : duration === "60"
+      ? "1 hour meeting"
+      : duration === "90"
+      ? "1.5 hour meeting"
+      : duration === "120"
+      ? "2 hour meeting"
+      : `${duration} minute meeting`;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -209,220 +223,239 @@ export function ScheduleCombine() {
           <EgyptianBorder className="my-4" />
         </div>
 
-        {/* Form / Results */}
-        {!showSuggestions ? (
-          <PapyrusCard>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
-                <CalendarDays className="w-5 h-5" />
-                Schedule Details
-              </CardTitle>
-              <CardDescription className="text-[#2C6E7E]">
-                Select a friend and time window to find available meeting slots
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Friend */}
-              <div className="space-y-2">
-                <Label htmlFor="friend" className="text-[#1B4B5A]">
-                  Select Friend
-                </Label>
-                <Select
-                  value={selectedFriendId}
-                  onValueChange={setSelectedFriendId}
-                >
-                  <SelectTrigger className="bg-white border-[#D4AF37]">
-                    <SelectValue placeholder="Choose a friend..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {friends.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-[#2C6E7E]">
-                        No friends yet
-                      </div>
-                    ) : (
-                      friends.map((f) => (
-                        <SelectItem key={f._id} value={f._id}>
-                          {nameOf(f)}
-                          {f.email ? ` (${f.email})` : ""}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date */}
-              <div className="space-y-2">
-                <Label htmlFor="date" className="text-[#1B4B5A]">
-                  Date
-                </Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="bg-white border-[#D4AF37]"
-                />
-              </div>
-
-              {/* Duration */}
-              <div className="space-y-2">
-                <Label htmlFor="duration" className="text-[#1B4B5A]">
-                  Meeting Duration (minutes)
-                </Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger className="bg-white border-[#D4AF37]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="90">1.5 hours</SelectItem>
-                    <SelectItem value="120">2 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Work Hours */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="workStart" className="text-[#1B4B5A]">
-                    Work Start Time
-                  </Label>
-                  <Input
-                    id="workStart"
-                    type="time"
-                    value={workStart}
-                    onChange={(e) => setWorkStart(e.target.value)}
-                    className="bg-white border-[#D4AF37]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workEnd" className="text-[#1B4B5A]">
-                    Work End Time
-                  </Label>
-                  <Input
-                    id="workEnd"
-                    type="time"
-                    value={workEnd}
-                    onChange={(e) => setWorkEnd(e.target.value)}
-                    className="bg-white border-[#D4AF37]"
-                  />
-                </div>
-              </div>
-
-              {/* Timezone */}
-              <div className="space-y-2">
-                <Label htmlFor="timezone" className="text-[#1B4B5A]">
-                  Timezone
-                </Label>
-                <Input
-                  id="timezone"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="bg-white border-[#D4AF37]"
-                  placeholder="America/New_York"
-                />
-              </div>
-
-              {/* Submit */}
-              <Button
-                onClick={handleFindTime}
-                disabled={loading || !selectedFriendId}
-                className="w-full bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+        {/* Form (always visible) */}
+        <PapyrusCard>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
+              <CalendarDays className="w-5 h-5" />
+              Schedule Details
+            </CardTitle>
+            <CardDescription className="text-[#2C6E7E]">
+              Select a friend and time window to find available meeting slots
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Friend */}
+            <div className="space-y-2">
+              <Label htmlFor="friend" className="text-[#1B4B5A]">
+                Select Friend
+              </Label>
+              <Select
+                value={selectedFriendId}
+                onValueChange={setSelectedFriendId}
               >
-                {loading ? (
-                  "Finding perfect moments..."
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Find Available Times
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </PapyrusCard>
-        ) : (
-          <div className="space-y-6">
+                <SelectTrigger className="bg-white border-[#D4AF37]">
+                  <SelectValue placeholder="Choose a friend..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {friends.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-[#2C6E7E]">
+                      No friends yet
+                    </div>
+                  ) : (
+                    friends.map((f) => (
+                      <SelectItem key={f._id} value={f._id}>
+                        {nameOf(f)}
+                        {f.email ? ` (${f.email})` : ""}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label htmlFor="date" className="text-[#1B4B5A]">
+                Date
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="bg-white border-[#D4AF37]"
+              />
+            </div>
+
+            {/* Duration */}
+            <div className="space-y-2">
+              <Label htmlFor="duration" className="text-[#1B4B5A]">
+                Meeting Duration (minutes)
+              </Label>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger className="bg-white border-[#D4AF37]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="90">1.5 hours</SelectItem>
+                  <SelectItem value="120">2 hours</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Work Hours */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="workStart" className="text-[#1B4B5A]">
+                  Work Start Time
+                </Label>
+                <Input
+                  id="workStart"
+                  type="time"
+                  value={workStart}
+                  onChange={(e) => setWorkStart(e.target.value)}
+                  className="bg-white border-[#D4AF37]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="workEnd" className="text-[#1B4B5A]">
+                  Work End Time
+                </Label>
+                <Input
+                  id="workEnd"
+                  type="time"
+                  value={workEnd}
+                  onChange={(e) => setWorkEnd(e.target.value)}
+                  className="bg-white border-[#D4AF37]"
+                />
+              </div>
+            </div>
+
+            {/* Timezone */}
+            <div className="space-y-2">
+              <Label htmlFor="timezone" className="text-[#1B4B5A]">
+                Timezone
+              </Label>
+              <Input
+                id="timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="bg-white border-[#D4AF37]"
+                placeholder="America/New_York"
+              />
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleFindTime}
+              disabled={loading || !selectedFriendId}
+              className="w-full bg-[#1B4B5A] hover:bg-[#2C6E7E] text-[#D4AF37] border-2 border-[#D4AF37]"
+            >
+              {loading ? (
+                "Finding perfect moments..."
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Find Available Times
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </PapyrusCard>
+      </div>
+
+      {/* Results Modal */}
+      <AlertDialog open={showSuggestions} onOpenChange={setShowSuggestions}>
+        <AlertDialogContent className="bg-[#F5E6D3] border-2 border-[#D4AF37] max-w-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#1B4B5A] flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Meeting Details
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[#2C6E7E]">
+              Here&apos;s the best time we found based on both schedules.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 mt-2">
+            {/* Who / date / duration */}
             <PapyrusCard>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
-                      {(
-                        nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
-                        "?"
-                      ).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="text-[#1B4B5A]">
-                        Meeting with{" "}
-                        {selectedFriend ? nameOf(selectedFriend) : "Friend"}
-                      </h3>
-                      <p className="text-[#2C6E7E]">
-                        {formatDate(suggestions[0]?.start || date)}
-                      </p>
-                    </div>
+              <CardContent className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
+                    {(
+                      nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
+                      "?"
+                    ).toUpperCase()}
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSuggestions(false)}
-                    className="border-[#D4AF37] text-[#1B4B5A]"
-                  >
-                    Change Details
-                  </Button>
+                  <div>
+                    <h3 className="text-[#1B4B5A]">
+                      Meeting with{" "}
+                      {selectedFriend ? nameOf(selectedFriend) : "Friend"}
+                    </h3>
+                    <p className="text-[#2C6E7E]">
+                      {firstSuggestion?.start
+                        ? formatDate(firstSuggestion.start)
+                        : date
+                        ? formatDate(date)
+                        : "Date not set"}
+                    </p>
+                    <p className="text-[#946923]">{durationLabel}</p>
+                  </div>
                 </div>
               </CardContent>
             </PapyrusCard>
 
-            <div>
-              <h2 className="text-[#D4AF37] mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5" /> Available Time Slots (
-                {suggestions.length})
-              </h2>
-              <div className="space-y-3">
-                {suggestions.map((s, i) => (
-                  <PapyrusCard
-                    key={i}
-                    className="hover:shadow-xl transition-shadow"
-                  >
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex flex-col items-center justify-center text-[#1B4B5A]">
-                            <span className="text-xs">Slot</span>
-                            <span>{i + 1}</span>
-                          </div>
-                          <div>
-                            <p className="text-[#1B4B5A]">
-                              {formatTime(s.start)} - {formatTime(s.end)}
-                            </p>
-                            <p className="text-[#2C6E7E]">
-                              {duration} minute meeting
-                            </p>
+            {/* Slots or no-slots message */}
+            {suggestions.length > 0 ? (
+              <div>
+                <h2 className="text-[#D4AF37] mb-3 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Available Time Slot{suggestions.length > 1 ? "s" : ""} (
+                  {suggestions.length})
+                </h2>
+                <div className="space-y-3">
+                  {suggestions.map((s, i) => (
+                    <PapyrusCard
+                      key={i}
+                      className="hover:shadow-xl transition-shadow"
+                    >
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex flex-col items-center justify-center text-[#1B4B5A]">
+                              <span className="text-xs">Slot</span>
+                              <span>{i + 1}</span>
+                            </div>
+                            <div>
+                              <p className="text-[#1B4B5A]">
+                                {formatTime(s.start)} - {formatTime(s.end)}
+                              </p>
+                              <p className="text-[#2C6E7E]">{durationLabel}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </PapyrusCard>
-                ))}
+                      </CardContent>
+                    </PapyrusCard>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {suggestions.length === 0 && (
+            ) : (
               <PapyrusCard>
-                <CardContent className="py-12 text-center">
-                  <Clock className="w-12 h-12 mx-auto mb-4 text-[#C5A572]" />
-                  <p className="text-[#2C6E7E] mb-2">No available times found</p>
-                  <p className="text-[#C5A572]">
-                    Try adjusting your time window or selecting a different date
+                <CardContent className="py-8 text-center">
+                  <Clock className="w-10 h-10 mx-auto mb-3 text-[#C5A572]" />
+                  <p className="text-[#2C6E7E] mb-1">
+                    No available times found
+                  </p>
+                  <p className="text-[#C5A572] text-sm">
+                    Try adjusting your work hours, duration, or picking a
+                    different date.
                   </p>
                 </CardContent>
               </PapyrusCard>
             )}
           </div>
-        )}
-      </div>
+
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="bg-white border-[#C5A572] text-[#2C6E7E]">
+              Close
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
