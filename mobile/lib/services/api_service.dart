@@ -10,7 +10,7 @@ class ApiService {
 
   /// 👇 Use local server when testing on an Android emulator
   /// (Flutter uses 10.0.2.2 instead of localhost)
-  static const String localBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String localBaseUrl = 'http://10.127.136.48:5000/api';
   //static const String localBaseUrl = 'http://localhost:5000/api';
 
   /// 👇 Choose the correct one automatically

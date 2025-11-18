@@ -150,37 +150,51 @@ class _FriendsScreenState extends State<FriendsScreen> {
   Future<void> _handleRemoveFriend(UIFriend friend) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.beige,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: AppColors.gold),
-        ),
-        title: const Text(
-          'Remove friend?',
-          style: TextStyle(color: AppColors.darkTeal),
-        ),
-        content: Text(
-          'Remove ${friend.nickname} from your circle? This cannot be undone.',
-          style: const TextStyle(color: AppColors.accentTeal),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.accentTeal),
+      builder: (context) {
+        final textTheme = Theme.of(context).textTheme;
+        return AlertDialog(
+          backgroundColor: AppColors.beige,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppColors.gold),
+          ),
+          title: Text(
+            'Remove friend?',
+            style: textTheme.headlineSmall?.copyWith(
+              color: AppColors.darkTeal,
             ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC1440E),
+          content: Text(
+            'Remove ${friend.nickname} from your circle? This cannot be undone.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: AppColors.accentTeal,
             ),
-            child: const Text('Remove'),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.accentTeal,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC1440E),
+              ),
+              child: Text(
+                'Remove',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed != true) return;
@@ -208,6 +222,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       ),
       builder: (ctx) {
         bool localLoading = false;
+        final textTheme = Theme.of(ctx).textTheme;
 
         return StatefulBuilder(
           builder: (context, setModalState) => Padding(
@@ -215,26 +230,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Add New Friend',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  style: textTheme.headlineSmall?.copyWith(
                     color: AppColors.darkTeal,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Add friends by their email address (they must have a Cairos account and be verified).',
-                  style: TextStyle(color: AppColors.accentTeal),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppColors.accentTeal,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: sheetController,
                   keyboardType: TextInputType.emailAddress,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppColors.darkTeal,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'friend@gmail.com',
+                    hintStyle: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.bronze,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -261,7 +282,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     ),
                     child: Text(
                       localLoading ? 'Sending...' : 'Send Request',
-                      style: const TextStyle(color: AppColors.gold),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.gold,
+                      ),
                     ),
                   ),
                 ),
@@ -274,7 +297,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   void _openPendingPanel() {
-    // If nothing pending, just show a snack and don’t open a blank panel
     if (_incoming.isEmpty) {
       _showSnack('No pending requests right now.');
       return;
@@ -287,6 +309,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (ctx, animation, secondaryAnimation) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         return Align(
           alignment: Alignment.centerRight,
           child: Material(
@@ -315,12 +339,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                             onPressed: () => Navigator.of(ctx).pop(),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Pending Requests',
-                            style: TextStyle(
+                            style: textTheme.headlineSmall?.copyWith(
                               color: AppColors.gold,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const Spacer(),
@@ -331,11 +353,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         ],
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'Accept or decline friend requests awaiting your response.',
-                        style: TextStyle(color: AppColors.bronze, fontSize: 12),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: AppColors.bronze,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -363,7 +387,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       },
       transitionBuilder: (ctx, anim, secondaryAnim, child) {
         final offsetAnimation = Tween<Offset>(
-          begin: const Offset(1.0, 0.0), // slide in from right
+          begin: const Offset(1.0, 0.0),
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
 
@@ -375,6 +399,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredFriends;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.darkTeal,
@@ -382,9 +407,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
         onPressed: _showAddFriendSheet,
         backgroundColor: AppColors.gold,
         icon: const Icon(Icons.person_add_alt_1, color: AppColors.darkTeal),
-        label: const Text(
+        label: Text(
           'Add Friend',
-          style: TextStyle(color: AppColors.darkTeal),
+          style: textTheme.bodyMedium?.copyWith(
+            color: AppColors.darkTeal,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: SafeArea(
@@ -409,19 +437,21 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
+                                // Cinzel (matches Dashboard "Welcome back")
                                 Text(
                                   'Your Circle',
-                                  style: TextStyle(
+                                  style: textTheme.headlineMedium?.copyWith(
                                     color: AppColors.gold,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
+                                // Cormorant (matches Dashboard subtitle)
                                 Text(
                                   'Manage your companions and connections',
-                                  style: TextStyle(color: AppColors.bronze),
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: AppColors.bronze,
+                                  ),
                                 ),
                               ],
                             ),
@@ -457,9 +487,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                     ),
                                     child: Text(
                                       _incoming.length.toString(),
-                                      style: const TextStyle(
+                                      style: textTheme.bodySmall?.copyWith(
                                         color: AppColors.darkTeal,
-                                        fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -474,12 +503,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       const EgyptianBorder(),
                       const SizedBox(height: 16),
 
-                      // Transparent-on-idle search bar on dark teal
                       _buildSearchBar(),
 
                       const SizedBox(height: 16),
 
-                      // Friends list directly on blue background (no big card)
                       _buildFriendsList(filtered),
 
                       const SizedBox(height: 80), // space for FAB
@@ -494,8 +521,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  /// Search bar: transparent until focused; when focused → gold outline + soft glow (Style 1)
   Widget _buildSearchBar() {
+    final textTheme = Theme.of(context).textTheme;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -529,10 +557,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
               focusNode: _searchFocusNode,
               controller: _searchController,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(color: AppColors.beige),
-              decoration: const InputDecoration(
+              style: textTheme.bodyMedium?.copyWith(color: AppColors.beige),
+              decoration: InputDecoration(
                 hintText: 'Search friends...',
-                hintStyle: TextStyle(color: AppColors.bronze),
+                hintStyle: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.bronze,
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -542,9 +572,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  /// Friends list: each friend is a clean rounded card with a papyrus-like background,
-  /// stacked on the dark teal background (no big outer card).
   Widget _buildFriendsList(List<UIFriend> filtered) {
+    final textTheme = Theme.of(context).textTheme;
+
     if (_loading) {
       return const Center(
         child: Padding(
@@ -559,18 +589,22 @@ class _FriendsScreenState extends State<FriendsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            AnkhIcon(size: 40, color: AppColors.gold),
-            SizedBox(height: 12),
+          children: [
+            const AnkhIcon(size: 40, color: AppColors.gold),
+            const SizedBox(height: 12),
             Text(
               'No friends yet',
-              style: TextStyle(color: AppColors.beige, fontSize: 14),
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppColors.beige,
+              ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Add friends by their email address to start finding the perfect time to meet.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.bronze, fontSize: 12),
+              style: textTheme.bodySmall?.copyWith(
+                color: AppColors.bronze,
+              ),
             ),
           ],
         ),
@@ -611,10 +645,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         filtered[i].nickname.isNotEmpty
                             ? filtered[i].nickname[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(
+                        style: textTheme.bodyLarge?.copyWith(
                           color: AppColors.darkTeal,
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
                         ),
                       ),
                     ),
@@ -625,26 +658,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         children: [
                           Text(
                             filtered[i].nickname,
-                            style: const TextStyle(
+                            style: textTheme.bodyMedium?.copyWith(
                               color: AppColors.darkTeal,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          // if (filtered[i].firstName.isNotEmpty ||
-                          //     filtered[i].lastName.isNotEmpty)
-                          //   Text(
-                          //     '${filtered[i].firstName} ${filtered[i].lastName}'
-                          //         .trim(),
-                          //     style: const TextStyle(
-                          //       color: AppColors.accentTeal,
-                          //       fontSize: 12,
-                          //     ),
-                          //   ),
                           Text(
                             filtered[i].email,
-                            style: const TextStyle(
+                            style: textTheme.bodySmall?.copyWith(
                               color: AppColors.bronze,
-                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -670,7 +692,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
             child: Center(
               child: Text(
                 '${_friends.length} ${_friends.length == 1 ? 'friend' : 'friends'} in your circle',
-                style: const TextStyle(color: AppColors.bronze, fontSize: 12),
+                style: textTheme.bodySmall?.copyWith(
+                  color: AppColors.bronze,
+                ),
               ),
             ),
           ),
@@ -691,7 +715,6 @@ class AnkhIcon extends StatelessWidget {
   }
 }
 
-/// Small helper widget for the animated slide+fade-in of each row.
 class _AnimatedFriendRow extends StatelessWidget {
   final int index;
   final bool animate;
@@ -725,7 +748,6 @@ class _AnimatedFriendRow extends StatelessWidget {
   }
 }
 
-/// Tile used inside the Pending Requests panel.
 class _PendingRequestTile extends StatelessWidget {
   final UIFriend friend;
   final VoidCallback onAccept;
@@ -739,6 +761,8 @@ class _PendingRequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
@@ -755,7 +779,7 @@ class _PendingRequestTile extends StatelessWidget {
               friend.nickname.isNotEmpty
                   ? friend.nickname[0].toUpperCase()
                   : '?',
-              style: const TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 color: AppColors.darkTeal,
                 fontWeight: FontWeight.bold,
               ),
@@ -768,14 +792,16 @@ class _PendingRequestTile extends StatelessWidget {
               children: [
                 Text(
                   friend.nickname,
-                  style: const TextStyle(
+                  style: textTheme.bodyMedium?.copyWith(
                     color: AppColors.darkTeal,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   friend.email,
-                  style: const TextStyle(color: AppColors.bronze, fontSize: 12),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppColors.bronze,
+                  ),
                 ),
               ],
             ),
@@ -788,7 +814,12 @@ class _PendingRequestTile extends StatelessWidget {
               foregroundColor: AppColors.gold,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
-            child: const Text('Accept'),
+            child: Text(
+              'Accept',
+              style: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           const SizedBox(width: 6),
           TextButton(
@@ -798,7 +829,12 @@ class _PendingRequestTile extends StatelessWidget {
               foregroundColor: const Color(0xFFC1440E),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
-            child: const Text('Decline'),
+            child: Text(
+              'Decline',
+              style: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
