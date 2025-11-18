@@ -93,7 +93,7 @@ function doLogout(event: any): void {
                 className={`px-3 py-1 rounded-full ${
                   user?.google.connected
                     ? "bg-emerald-100 text-emerald-900"
-                    : "bg-[#F2B9A0] text-[#C1440E]"
+                    : "bg-[#F4D0C1] text-[#C1440E]"
                 }`}
               >
                 {user?.google.connected ? "Connected" : "Not Connected"}

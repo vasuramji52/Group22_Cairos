@@ -8,21 +8,42 @@ interface AuthPageLayoutProps {
 }
 
 const backgroundTexture =
-  'https://images.unsplash.com/photo-1738512164098-9487d6d501e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoaWVyb2dseXBoaWNzJTIwZWd5cHRpYW4lMjBzeW1ib2xzfGVufDF8fHx8MTc2MTY2MDQ2Nnww&ixlib=rb-4.1.0&q=80&w=1080';
+  "https://images.unsplash.com/photo-1738512164098-9487d6d501e7?fm=webp&q=45&w=1200";
 
 const cardTexture =
-  'https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080';
+  "https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?fm=webp&q=55&w=900";
 
 const AuthPageLayout = ({
   children,
   tagline = 'Discover the perfect moments to connect',
-  cardBackgroundImage = cardTexture
 }: AuthPageLayoutProps) => {
   return (
     <div
       className="min-h-screen bg-[#1B4B5A] flex flex-col relative"
       style={{ fontFamily: "'Crimson Pro', serif" }}
     >
+      <link rel="preconnect" href="https://images.unsplash.com" />
+      <link rel="preload" as="image" href={cardTexture} fetchPriority="high" />
+      <img
+        src={backgroundTexture}
+        alt=""
+        fetchPriority="low"
+        decoding="async"
+        loading="eager"
+        className="absolute inset-0 w-full h-full object-cover opacity-5 pointer-events-none"
+      />
+
+      <picture>
+        <source srcSet={backgroundTexture} type="image/webp" />
+        <img
+          src={backgroundTexture}
+          alt="Egyptian background texture"
+          className="absolute inset-0 w-full h-full object-cover opacity-5 pointer-events-none"
+          decoding="async"
+          loading="lazy"
+        />
+      </picture>
+
       {/* Hieroglyphics background */}
       <div
         className="absolute inset-0 opacity-5 pointer-events-none"
@@ -68,14 +89,14 @@ const AuthPageLayout = ({
             <Moon className="w-5 h-5" />
           </div>
 
-          <div
-            className="rounded-2xl p-8 shadow-2xl border-[3px] border-[#D4AF37] relative overflow-hidden"
-            style={{
-              backgroundImage: `url(${cardBackgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
+          <div className="relative rounded-2xl p-8 shadow-2xl border-[3px] border-[#D4AF37] overflow-hidden">
+            <img
+              src={cardTexture}
+              alt="Papyrus card"
+              className="absolute inset-0 w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="sync"
+            />
             <div className="relative z-10">{children}</div>
           </div>
 

@@ -13,7 +13,7 @@ class TopBanner extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.icon,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(8),
     this.borderRadius = 12,
   });
 
@@ -25,10 +25,7 @@ class TopBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            icon!,
-            const SizedBox(width: 20),
-          ],
+          if (icon != null) ...[icon!, const SizedBox(width: 20)],
           Flexible(
             fit: FlexFit.loose,
             child: Column(
@@ -64,11 +61,7 @@ class EgyptianBorder extends StatelessWidget {
   final EdgeInsets? padding;
   final EdgeInsets? margin;
 
-  const EgyptianBorder({
-    super.key,
-    this.padding,
-    this.margin,
-  });
+  const EgyptianBorder({super.key, this.padding, this.margin});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +72,7 @@ class EgyptianBorder extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Left gradient line 
+          // Left gradient line
           Flexible(
             fit: FlexFit.loose,
             child: Container(
@@ -88,11 +81,7 @@ class EgyptianBorder extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.gold,
-                    AppColors.gold,
-                  ],
+                  colors: [Colors.transparent, AppColors.gold, AppColors.gold],
                 ),
               ),
             ),
@@ -110,9 +99,7 @@ class EgyptianBorder extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.gold,
-                ),
+                decoration: const BoxDecoration(color: AppColors.gold),
                 transform: Matrix4.rotationZ(0.785398),
               ),
             ),
@@ -129,11 +116,7 @@ class EgyptianBorder extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.gold,
-                    AppColors.gold,
-                  ],
+                  colors: [Colors.transparent, AppColors.gold, AppColors.gold],
                 ),
               ),
             ),
@@ -164,23 +147,14 @@ class PapyrusCard extends StatelessWidget {
       width: double.infinity, // takes as much width as parent
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.gold, // gold border
-          width: 3,
-        ),
-        image: const DecorationImage(
-          image: NetworkImage(
-            'https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
-          ),
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-        ),
+        color: AppColors.beige.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),

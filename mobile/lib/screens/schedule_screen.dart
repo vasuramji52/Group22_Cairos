@@ -203,21 +203,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // ---------- UI HELPERS (cards + modals) ----------
 
   BoxDecoration get _sectionDecoration => BoxDecoration(
-    color: AppColors.beige.withOpacity(0.95),
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.18),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  );
+        color: AppColors.beige.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
 
   BoxDecoration _modalDecoration() => BoxDecoration(
-    color: AppColors.beige.withOpacity(0.97),
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-  );
+        color: AppColors.beige.withOpacity(0.97),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      );
 
   Widget _buildHandleBar() {
     return Container(
@@ -239,8 +239,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     bool required = false,
     bool hasError = false,
   }) {
-    final baseLabelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
-      color: hasError ? Colors.red[700] : Colors.black54,
+    final textTheme = Theme.of(context).textTheme;
+
+    final baseLabelStyle = textTheme.labelMedium?.copyWith(
+      color: hasError ? Colors.red[700] : AppColors.accentTeal,
     );
 
     return InkWell(
@@ -251,7 +253,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Row(
           children: [
             if (leadingIcon != null) ...[
-              Icon(leadingIcon, size: 20, color: Colors.black54),
+              Icon(leadingIcon, size: 20, color: AppColors.accentTeal),
               const SizedBox(width: 10),
             ],
             Expanded(
@@ -273,9 +275,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    style: textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.darkTeal,
                     ),
                   ),
                   if (hasError)
@@ -283,15 +285,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       padding: const EdgeInsets.only(top: 2.0),
                       child: Text(
                         'This field is required',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.red[700]),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.red[700],
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+            Icon(Icons.chevron_right, color: AppColors.accentTeal),
           ],
         ),
       ),
@@ -383,6 +385,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         if (_friends.isEmpty) {
           return SafeArea(
             child: Container(
@@ -397,7 +401,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'No friends yet',
-                      style: Theme.of(ctx).textTheme.bodyMedium,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.darkTeal,
+                      ),
                     ),
                   ],
                 ),
@@ -417,7 +423,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 const SizedBox(height: 12),
                 Text(
                   'Select Friend',
-                  style: Theme.of(ctx).textTheme.titleMedium,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: AppColors.darkTeal,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Flexible(
@@ -431,14 +439,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           backgroundColor: AppColors.gold.withOpacity(0.9),
                           child: Text(
                             _friendInitial(f),
-                            style: const TextStyle(
-                              color: Colors.black87,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: AppColors.darkTeal,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        title: Text(f.displayName()),
-                        subtitle: f.email != null ? Text(f.email!) : null,
+                        title: Text(
+                          f.displayName(),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: AppColors.darkTeal,
+                          ),
+                        ),
+                        subtitle: f.email != null
+                            ? Text(
+                                f.email!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: AppColors.accentTeal,
+                                ),
+                              )
+                            : null,
                         onTap: () => Navigator.of(context).pop(f.id),
                       );
                     },
@@ -473,6 +493,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         return SafeArea(
           child: Container(
             decoration: _modalDecoration(),
@@ -484,18 +506,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Meeting Duration',
-                  style: Theme.of(ctx).textTheme.titleMedium,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: AppColors.darkTeal,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: CupertinoPicker(
                     scrollController: controller,
-                    itemExtent: 32,
+                    itemExtent: 38,
                     onSelectedItemChanged: (index) {
                       selectedIndex = index;
                     },
                     children: options
-                        .map((opt) => Center(child: Text(opt['label']!)))
+                        .map(
+                          (opt) => Center(
+                            child: Text(
+                              opt['label']!,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: AppColors.darkTeal,
+                                fontSize: 17,
+                              ),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -505,13 +539,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     padding: const EdgeInsets.only(right: 16.0),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4B5A),
+                        backgroundColor: AppColors.darkTeal,
                         foregroundColor: AppColors.gold,
                       ),
                       onPressed: () {
                         Navigator.of(ctx).pop(options[selectedIndex]['value']!);
                       },
-                      child: const Text('Done'),
+                      child: Text(
+                        'Done',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -532,6 +572,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -546,13 +588,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 children: [
                   Center(child: _buildHandleBar()),
                   const SizedBox(height: 12),
-                  Text('Timezone', style: Theme.of(ctx).textTheme.titleMedium),
+                  Text(
+                    'Timezone',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: AppColors.darkTeal,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.darkTeal,
+                    ),
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
                       labelText: 'IANA Timezone (e.g. America/New_York)',
+                      labelStyle: textTheme.bodySmall?.copyWith(
+                        color: AppColors.accentTeal,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -560,13 +613,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4B5A),
+                        backgroundColor: AppColors.darkTeal,
                         foregroundColor: AppColors.gold,
                       ),
                       onPressed: () {
                         Navigator.of(ctx).pop(controller.text.trim());
                       },
-                      child: const Text('Save'),
+                      child: Text(
+                        'Save',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -609,6 +668,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         return SafeArea(
           child: Container(
             decoration: _modalDecoration(),
@@ -618,7 +679,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               children: [
                 _buildHandleBar(),
                 const SizedBox(height: 8),
-                Text('Select Time', style: Theme.of(ctx).textTheme.titleMedium),
+                Text(
+                  'Select Time',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: AppColors.darkTeal,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: Row(
@@ -628,29 +694,46 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       Expanded(
                         child: CupertinoPicker(
                           scrollController: hourController,
-                          itemExtent: 32,
+                          itemExtent: 38,
                           onSelectedItemChanged: (index) {
                             selectedHour12 = index + 1;
                           },
                           children: List.generate(
                             12,
-                            (i) => Center(child: Text('${i + 1}')),
+                            (i) => Center(
+                              child: Text(
+                                '${i + 1}',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.darkTeal,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                      const Text(':'),
+                      const Text(
+                        ':',
+                        style: TextStyle(color: AppColors.darkTeal),
+                      ),
                       // Minutes
                       Expanded(
                         child: CupertinoPicker(
                           scrollController: minuteController,
-                          itemExtent: 32,
+                          itemExtent: 38,
                           onSelectedItemChanged: (index) {
                             selectedMinute = index;
                           },
                           children: List.generate(
                             60,
                             (i) => Center(
-                              child: Text(i.toString().padLeft(2, '0')),
+                              child: Text(
+                                i.toString().padLeft(2, '0'),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.darkTeal,
+                                  fontSize: 17,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -659,13 +742,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       Expanded(
                         child: CupertinoPicker(
                           scrollController: periodController,
-                          itemExtent: 32,
+                          itemExtent: 38,
                           onSelectedItemChanged: (index) {
                             selectedPeriodIndex = index;
                           },
-                          children: const [
-                            Center(child: Text('AM')),
-                            Center(child: Text('PM')),
+                          children: [
+                            Center(
+                              child: Text(
+                                'AM',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.darkTeal,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+                            Center(
+                              child: Text(
+                                'PM',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.darkTeal,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -678,7 +777,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     padding: const EdgeInsets.only(right: 16.0),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4B5A),
+                        backgroundColor: AppColors.darkTeal,
                         foregroundColor: AppColors.gold,
                       ),
                       onPressed: () {
@@ -689,7 +788,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             '${h24.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}';
                         Navigator.of(ctx).pop(newHm);
                       },
-                      child: const Text('Done'),
+                      child: Text(
+                        'Done',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -717,7 +822,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final dateLabel = _formatDateLabel(slot.startIso);
     final friendName = selectedFriend?.displayName() ?? 'Friend';
     final friendInitialChar = _friendInitial(selectedFriend);
-    final isSmall = MediaQuery.of(context).size.width < 380;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -726,24 +830,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
         return SafeArea(
           child: Container(
             decoration: _modalDecoration(),
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(
-              height: 260, // ← make the sheet taller
+              height: 260,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(child: _buildHandleBar()),
                   const SizedBox(height: 12),
 
-                  // header: person + date
+                  // header: avatar + meeting info
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -756,68 +863,52 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         alignment: Alignment.center,
                         child: Text(
                           friendInitialChar,
-                          style: const TextStyle(
+                          style: textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
+                            color: AppColors.darkTeal,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Meeting with $friendName',
-                              style: Theme.of(ctx).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              dateLabel,
-                              style: Theme.of(ctx).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.black54,
-                                    fontSize: isSmall ? 15 : 16,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // time row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(LucideIcons.clock, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$startLabel - $endLabel',
-                              style: Theme.of(ctx).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: isSmall ? 13 : 14,
-                                  ),
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 19,
+                                color: AppColors.darkTeal,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
+                              dateLabel,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: AppColors.darkTeal,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
                               '$_duration minute meeting • $_timezone',
-                              style: Theme.of(ctx).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.black54,
-                                    fontSize: isSmall ? 13 : 14,
-                                  ),
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: AppColors.darkTeal,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$startLabel – $endLabel',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: const Color.fromRGBO(27, 75, 90, 1),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -831,11 +922,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4B5A),
+                        backgroundColor: AppColors.darkTeal,
                         foregroundColor: AppColors.gold,
                       ),
                       onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Close'),
+                      child: Text(
+                        'Close',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1005,6 +1102,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final bool canSubmit = !_loading && _selectedFriendId != null;
 
     return Scaffold(
@@ -1012,7 +1110,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1B4B5A), Color(0xFF2C6E7E)],
+            colors: [AppColors.darkTeal, AppColors.accentTeal],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -1029,23 +1127,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Cinzel header (matches other screens)
                                 Text(
                                   'Find the Perfect Time',
-                                  style: TextStyle(
+                                  style: textTheme.headlineMedium?.copyWith(
                                     color: AppColors.gold,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
+                                // Cormorant subtitle
                                 Text(
                                   'Combine schedules to discover your Kairos',
-                                  style: TextStyle(color: AppColors.bronze),
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: AppColors.bronze,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1096,42 +1196,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        style:
-                            ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              minimumSize: const Size.fromHeight(56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                side: BorderSide(
-                                  color: AppColors.gold,
-                                  width: 2,
-                                ),
-                              ),
-                              backgroundColor: const Color(0xFF1B4B5A),
-                              foregroundColor: AppColors.gold,
-                              elevation: 0, // shadow handled by DecoratedBox
-                            ).copyWith(
-                              backgroundColor:
-                                  MaterialStateProperty.resolveWith((states) {
-                                    if (states.contains(
-                                      MaterialState.disabled,
-                                    )) {
-                                      return const Color(0xFF2C6E7E);
-                                    }
-                                    return const Color(0xFF1B4B5A);
-                                  }),
-                              foregroundColor:
-                                  MaterialStateProperty.resolveWith((states) {
-                                    if (states.contains(
-                                      MaterialState.disabled,
-                                    )) {
-                                      return const Color(0xFFC5A572);
-                                    }
-                                    return AppColors.gold;
-                                  }),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          minimumSize: const Size.fromHeight(56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            side: BorderSide(
+                              color: AppColors.gold,
+                              width: 2,
                             ),
+                          ),
+                          backgroundColor: AppColors.darkTeal,
+                          foregroundColor: AppColors.gold,
+                          elevation: 0, // shadow handled by DecoratedBox
+                        ).copyWith(
+                          backgroundColor:
+                              MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(MaterialState.disabled)) {
+                              return AppColors.accentTeal;
+                            }
+                            return AppColors.darkTeal;
+                          }),
+                          foregroundColor:
+                              MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(MaterialState.disabled)) {
+                              return const Color(0xFFC5A572);
+                            }
+                            return AppColors.gold;
+                          }),
+                        ),
                         onPressed: canSubmit ? _handleFindTime : null,
                         icon: _loading
                             ? const SizedBox(
@@ -1144,20 +1239,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               )
                             : const Icon(LucideIcons.sparkles),
                         label: _loading
-                            ? const Text(
+                            ? Text(
                                 'Finding perfect\nmoments...',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: textTheme.bodyMedium?.copyWith(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  color: AppColors.gold,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 'Find Available Times',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: textTheme.bodyMedium?.copyWith(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
+                                  color: AppColors.gold,
                                 ),
                               ),
                       ),
@@ -1174,6 +1271,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // ---------- FORM VIEW ----------
   Widget _buildFormView(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     if (_initialLoading) {
       // simple skeleton placeholders
       return Column(
@@ -1217,8 +1316,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         // Section: Participants
         Text(
           'Participants',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
+          style: textTheme.titleSmall?.copyWith(
+            color: AppColors.gold,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1245,9 +1344,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             friendStatus,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+            style: textTheme.bodySmall?.copyWith(color: Colors.white70),
           ),
         ),
 
@@ -1256,8 +1353,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         // Section: Date & Duration
         Text(
           'Date & Duration',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
+          style: textTheme.titleSmall?.copyWith(
+            color: AppColors.gold,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1270,7 +1367,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           onTap: () async {
             final initialDate =
                 DateTime.tryParse('${_date}T00:00:00') ??
-                DateTime.now().add(const Duration(days: 1));
+                    DateTime.now().add(const Duration(days: 1));
             final picked = await showDatePicker(
               context: context,
               initialDate: initialDate,
@@ -1309,8 +1406,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         // Section: Working Hours
         Text(
           'Working Hours',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
+          style: textTheme.titleSmall?.copyWith(
+            color: AppColors.gold,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1323,8 +1420,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         // Section: Timezone
         Text(
           'Timezone',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
+          style: textTheme.titleSmall?.copyWith(
+            color: AppColors.gold,
             fontWeight: FontWeight.w600,
           ),
         ),

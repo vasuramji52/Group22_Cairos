@@ -13,9 +13,12 @@ import {
   SundialIcon,
   NileWave,
 } from "./egyptian-decorations";
-//import { getMe, completeGoogleConnection, type User } from "../lib/mock-api";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { api, getMeReal } from "../lib/api";
+import {
+  getScheduleTaskComplete,
+  ONBOARDING_PROGRESS_EVENT,
+} from "../lib/getting-started";
 
 type User = {
   _id: string;
@@ -37,6 +40,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [hasScheduledMeeting, setHasScheduledMeeting] = useState(() =>
+    getScheduleTaskComplete()
+  );
 
   useEffect(() => {
     loadUser();
@@ -108,6 +114,26 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     }
   }
 
+  const userId = user?._id ?? null;
+
+  useEffect(() => {
+    setHasScheduledMeeting(getScheduleTaskComplete(userId));
+  }, [userId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handler: EventListener = () => {
+      setHasScheduledMeeting(getScheduleTaskComplete(userId));
+    };
+
+    window.addEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    return () => {
+      window.removeEventListener(ONBOARDING_PROGRESS_EVENT, handler);
+    };
+  }, [userId]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E]">
@@ -118,6 +144,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   const friendCount = Array.isArray(user?.friends) ? user.friends.length : 0;
   const hasFriends = friendCount > 0;
+  const calendarConnected = Boolean(user?.google.connected);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -232,7 +259,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <CardContent>
               <div className="flex items-center justify-between">
                 <p className="text-[#1B4B5A]">
-                  {user?.google.connected
+                  {calendarConnected
                     ? "Start scheduling meetings"
                     : "Connect calendar first"}
                 </p>
@@ -256,10 +283,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <div className="space-y-3 text-[#2C6E7E]">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  {user?.google.connected ? "✓" : "1"}
+                  {calendarConnected ? "✓" : "1"}
                 </div>
                 <p>
-                  {user?.google.connected
+                  {calendarConnected
                     ? "Calendar connected"
                     : "Connect your Google Calendar to access your schedule"}
                 </p>
@@ -276,9 +303,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                  3
+                  {hasScheduledMeeting ? "✓" : "3"}
                 </div>
-                <p>Find the perfect time to meet by combining your schedules</p>
+                <p>
+                  {hasScheduledMeeting
+                    ? "You've combined schedules and found the perfect time to meet"
+                    : "Find the perfect time to meet by combining your schedules"
+                  }
+                </p>
               </div>
             </div>
           </CardContent>

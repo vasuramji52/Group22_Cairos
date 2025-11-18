@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:mobile/screens/bottom_nav.dart';
 
+import 'theme.dart'; // 👈 ADD THIS
+
 // Screens
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -24,23 +26,18 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final AppLinks _appLinks;
-
-  // This must NOT be const because SplashScreen now has a required parameter.
-  // late Widget _startScreen;
-
   Uri? _pendingInitialLink;
 
   @override
   void initState() {
     super.initState();
-    // _startScreen = SplashScreen(onFinish: handleSplashFinished);
     _initDeepLinks();
   }
 
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // ---------- COLD START ----------
+    // COLD START
     try {
       final Uri? initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
@@ -50,7 +47,7 @@ class _MyAppState extends State<MyApp> {
       debugPrint('Error getting initial link: $e');
     }
 
-    // ---------- WARM STATE ----------
+    // WARM STATE
     _appLinks.uriLinkStream.listen((uri) {
       if (uri != null) {
         _handleWarmLink(uri);
@@ -58,7 +55,6 @@ class _MyAppState extends State<MyApp> {
     }, onError: (err) => debugPrint('Deep link stream error: $err'));
   }
 
-  /// Handle deep links when app is already open
   void _handleWarmLink(Uri uri) {
     final link = uri.toString();
     debugPrint("🔥 Warm deep link: $link");
@@ -86,9 +82,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  /// Called by SplashScreen AFTER animation completes
   void handleSplashFinished(BuildContext context) async {
-    // If a deep link arrived during splash:
     if (_pendingInitialLink != null) {
       final uri = _pendingInitialLink!;
       final link = uri.toString();
@@ -139,7 +133,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // Splash always loads first
+      theme: AppTheme.lightTheme, // 👈 USE THE NEW THEME
+
       home: Builder(
         builder: (context) {
           return SplashScreen(onFinish: () => handleSplashFinished(context));
