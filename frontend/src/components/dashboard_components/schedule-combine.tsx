@@ -62,7 +62,7 @@ export function ScheduleCombine() {
   const [ meetingTitle, setMeetingTitle ] = useState("");
 
   // how many slots & gap between them
-  const MAX_SLOTS = 4;
+  const MAX_SLOTS = 3;
   const GAP_MINUTES = 0; // next slot must be at least 30 min after previous
 
   function addMinutes(date: Date, minutes: number) {
