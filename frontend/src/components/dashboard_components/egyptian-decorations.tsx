@@ -94,7 +94,7 @@ export function PapyrusCard({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   const bgUrl =
-    "https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXBlciUyMHRleHR1cmUlMjBiZWlnZXxlbnwxfHx8fDE3NjEyNTE5MTF8MA&ixlib=rb-4.1.0&q=80&w=1080";
+    "https://images.unsplash.com/photo-1686806372785-fcfe9efa9b70?fm=webp&q=55&w=900";
 
   return (
     <div

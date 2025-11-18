@@ -53,11 +53,12 @@ function CardUI()
       {/* Sidebar */}
       <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34] border-r-2 border-[#D4AF37]/30 flex flex-col z-50">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1B4B5A] to-[#0F2A34]">
-          <div
-            className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat pointer-events-none"
-            style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1738512164098-9487d6d501e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoaWVyb2dseXBoaWNzJTIwZWd5cHRpYW4lMjBzeW1ib2xzfGVufDF8fHx8MTc2MTY2MDQ2Nnww&ixlib=rb-4.1.0&q=80&w=1080')`,
-            }}
+          <img
+            src="/images/hieroglyphics.webp"
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover opacity-5 pointer-events-none"
           />
         </div>
         
