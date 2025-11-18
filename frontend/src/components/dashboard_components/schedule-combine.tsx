@@ -495,7 +495,6 @@ import { getFriendsReal, type FriendDTO } from "../lib/friends.api";
 import { type Suggestion } from "../lib/mock-api";
 import { toast } from "sonner";
 import { availabilityFirst } from "../lib/api";
-import { markScheduleTaskComplete } from "../lib/getting-started";
 
 function nameOf(f: FriendDTO) {
   const n = `${(f.firstName ?? "").trim()} ${(f.lastName ?? "").trim()}`.trim();
@@ -630,41 +629,6 @@ export function ScheduleCombine() {
       toast.error(err?.message || "Failed to find available times");
     } finally {
       setLoading(false);
-    }
-  }
-
-  function handleSelectSlot(slot: Suggestion) {
-    setSelectedSlot(slot);
-    const f = friends.find(x => x._id === selectedFriendId);
-    setMeetingTitle(f ? `Meeting with ${nameOf(f)}` : "Meeting");
-    setShowConfirmDialog(true);
-  }
-
-  async function handleConfirmMeeting() {
-    if (!selectedSlot || !meetingTitle) {
-      toast.error("Please enter a meeting title");
-      return;
-    }
-    try {
-      await createEvent({
-        friendId: selectedFriendId,
-        title: meetingTitle,
-        start: selectedSlot.start,
-        end: selectedSlot.end,
-        location: meetingLocation,
-        description: meetingDescription,
-      });
-      toast.success("Meeting created!");
-      markScheduleTaskComplete();
-      setShowConfirmDialog(false);
-      setShowSuggestions(false);
-      setSuggestions([]);
-      setSelectedSlot(null);
-      setMeetingTitle("");
-      setMeetingLocation("");
-      setMeetingDescription("");
-    } catch {
-      toast.error("Failed to create meeting");
     }
   }
 
