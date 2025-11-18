@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -146,34 +146,6 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const hasFriends = friendCount > 0;
   const calendarConnected = Boolean(user?.google.connected);
 
-  const gettingStartedSteps = useMemo(
-    () => [
-      {
-        id: 1,
-        complete: calendarConnected,
-        completedText: "Calendar connected",
-        pendingText: "Connect your Google Calendar to access your schedule",
-      },
-      {
-        id: 2,
-        complete: hasFriends,
-        completedText: `You have ${friendCount} ${
-          friendCount === 1 ? "friend" : "friends"
-        } in your circle`,
-        pendingText: "Add friends to your circle by their email address",
-      },
-      {
-        id: 3,
-        complete: hasScheduledMeeting,
-        completedText:
-          "You've combined schedules and found the perfect time to meet",
-        pendingText:
-          "Find the perfect time to meet by combining your schedules",
-      },
-    ],
-    [calendarConnected, friendCount, hasFriends, hasScheduledMeeting]
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
       <div className="max-w-6xl mx-auto">
@@ -287,7 +259,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <CardContent>
               <div className="flex items-center justify-between">
                 <p className="text-[#1B4B5A]">
-                  {user?.google.connected
+                  {calendarConnected
                     ? "Start scheduling meetings"
                     : "Connect calendar first"}
                 </p>
@@ -309,14 +281,37 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-[#2C6E7E]">
-              {gettingStartedSteps.map((step) => (
-                <div className="flex items-start gap-3" key={step.id}>
-                  <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
-                    {step.complete ? "✓" : step.id}
-                  </div>
-                  <p>{step.complete ? step.completedText : step.pendingText}</p>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
+                  {calendarConnected ? "✓" : "1"}
                 </div>
-              ))}
+                <p>
+                  {calendarConnected
+                    ? "Calendar connected"
+                    : "Connect your Google Calendar to access your schedule"}
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
+                  {hasFriends ? "✓" : "2"}
+                </div>
+                <p>
+                  {hasFriends
+                    ? `You have ${friendCount} ${friendCount === 1 ? "friend" : "friends"} in your circle`
+                    : "Add friends to your circle by their email address"}
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[#1B4B5A] text-sm flex-shrink-0">
+                  {hasScheduledMeeting ? "✓" : "3"}
+                </div>
+                <p>
+                  {hasScheduledMeeting
+                    ? "You've combined schedules and found the perfect time to meet"
+                    : "Find the perfect time to meet by combining your schedules"
+                  }
+                </p>
+              </div>
             </div>
           </CardContent>
         </PapyrusCard>
