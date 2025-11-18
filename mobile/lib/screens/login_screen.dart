@@ -1,10 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mobile/screens/bottom_nav.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,12 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       backgroundColor: AppColors.darkTeal,
-
-      // Prevent keyboard pushing content offscreen
       resizeToAvoidBottomInset: true,
-
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -70,21 +70,25 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // ---- LOGO + SLOGAN ----
                 const Icon(Icons.access_time, color: AppColors.gold, size: 48),
-                const SizedBox(height: 8),
-                const Text(
-                  "CAIROS",
-                  style: TextStyle(
+                const SizedBox(height: 10),
+
+                // HERO TITLE — use theme like Settings / Dashboard
+                Text(
+                  'Cairos',
+                  style: textTheme.headlineMedium?.copyWith(
                     color: AppColors.gold,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 2),
-                const Text(
-                  "Find your moment",
-                  style: TextStyle(color: AppColors.bronze, fontSize: 14),
+                const SizedBox(height: 4),
+
+                // HERO SUBTITLE — same pattern as Settings subtitle
+                Text(
+                  'Find your moment',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: AppColors.bronze,
+                  ),
                 ),
+
                 const SizedBox(height: 28),
 
                 // ---- LOGIN CARD ----
@@ -104,15 +108,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         'Welcome Back',
                         style: TextStyle(
+                          fontFamily: 'Nunito',
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.darkTeal,
                         ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         'Log in to seize your kairos',
-                        style: TextStyle(color: AppColors.accentTeal),
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: AppColors.accentTeal,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 22),
 
@@ -120,12 +129,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(fontFamily: 'Nunito'),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
                             Icons.email_outlined,
                             color: AppColors.accentTeal,
                           ),
                           labelText: 'Email',
+                          labelStyle:
+                              const TextStyle(fontFamily: 'Nunito'),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -147,6 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: passwordController,
                         obscureText: !_passwordVisible,
+                        style: const TextStyle(fontFamily: 'Nunito'),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
                             Icons.lock_outline,
@@ -166,6 +179,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           labelText: 'Password',
+                          labelStyle:
+                              const TextStyle(fontFamily: 'Nunito'),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -195,24 +210,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            elevation: 3,
                           ),
                           child: const Text(
                             'Log In',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
 
                       const SizedBox(height: 12),
 
-                      // ERROR MESSAGE
                       if (message.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Text(
                             message,
                             style: const TextStyle(
+                              fontFamily: 'Nunito',
                               color: Colors.redAccent,
                               fontSize: 13,
                             ),
@@ -231,10 +248,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text(
                           'Forgot Password?',
-                          style: TextStyle(color: AppColors.accentTeal),
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: AppColors.accentTeal,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-
                       TextButton(
                         onPressed: () {
                           Navigator.pushReplacement(
@@ -246,7 +266,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text(
                           "Don't have an account? Sign up",
-                          style: TextStyle(color: AppColors.accentTeal),
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: AppColors.accentTeal,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ],
