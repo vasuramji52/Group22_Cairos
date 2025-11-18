@@ -168,7 +168,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         {/* Hero Section with Nile Background */}
         <div className="relative mb-8 rounded-xl overflow-hidden">
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1662552445969-78212cc5899f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuaWxlJTIwcml2ZXIlMjBzdW5zZXR8ZW58MXx8fHwxNzYxNTk5NzgzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+            src="/images/sunset_image.webp"
             alt="Nile sunset"
             className="w-full h-48 object-cover"
           />

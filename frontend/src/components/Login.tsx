@@ -117,9 +117,13 @@ function Login() {
                 flex 
                 items-center 
                 justify-center 
-                text-[#1B4B5A] 
-                hover:text-[#0D3441] 
+                text-[#1B4B5A]
+                hover:text-[#0D3441]
                 transition
+                p-2
+                min-w-10
+                min-h-10
+                rounded-md
               "
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
