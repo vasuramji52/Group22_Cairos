@@ -264,9 +264,9 @@ export function ScheduleCombine() {
       ? "2 hour meeting"
       : `${duration} minute meeting`;
 
-  const meetingDate =
+  /*const meetingDate =
     firstSuggestion?.start ??
-    (startDate ? new Date(startDate).toISOString() : "");
+    (startDate ? new Date(startDate).toISOString() : ""); */
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
