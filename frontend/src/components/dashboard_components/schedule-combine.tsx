@@ -251,7 +251,7 @@ export function ScheduleCombine() {
   }
 
   const selectedFriend = friends.find((f) => f._id === selectedFriendId);
-  const firstSuggestion = suggestions[0];
+  //const firstSuggestion = suggestions[0];
 
   const durationLabel =
     duration === "30"
