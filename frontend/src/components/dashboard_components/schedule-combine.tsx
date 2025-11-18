@@ -280,7 +280,7 @@ export function ScheduleCombine() {
                 Find the Perfect Time
               </h1>
               <p className="text-[#C5A572]">
-                Combine schedules to discover your Kairos
+                Combine schedules to discover your Cairos
               </p>
             </div>
           </div>
