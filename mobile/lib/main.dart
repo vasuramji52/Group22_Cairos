@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:mobile/screens/bottom_nav.dart';
-import 'package:mobile/screens/register_screen.dart';
+
+import 'theme.dart'; // 👈 ADD THIS
 
 // Screens
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/verified_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/reset_password_screen.dart';
+import 'screens/splash_screen.dart';
+import 'services/api_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,88 +26,125 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final AppLinks _appLinks;
-  Widget _startScreen = const LoginScreen();
+  Uri? _pendingInitialLink;
 
   @override
   void initState() {
     super.initState();
-    _initDeepLinkHandling();
+    _initDeepLinks();
   }
 
-  Future<void> _initDeepLinkHandling() async {
+  Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // 🚀 COLD START: app launched from a link
+    // COLD START
     try {
       final Uri? initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        _handleIncomingLink(initialUri);
+        _pendingInitialLink = initialUri;
       }
     } catch (e) {
-      debugPrint('Error reading initial link: $e');
+      debugPrint('Error getting initial link: $e');
     }
 
-    // 🔥 WARM STATE: app already open, receives a link
-    _appLinks.uriLinkStream.listen(
-      (Uri? uri) {
-        if (uri != null) {
-          _handleIncomingLink(uri);
-        }
-      },
-      onError: (err) {
-        debugPrint('Deep link stream error: $err');
-      },
-    );
+    // WARM STATE
+    _appLinks.uriLinkStream.listen((uri) {
+      if (uri != null) {
+        _handleWarmLink(uri);
+      }
+    }, onError: (err) => debugPrint('Deep link stream error: $err'));
   }
 
-  /// 💡 Central place to route deep links
-  void _handleIncomingLink(Uri uri) {
+  void _handleWarmLink(Uri uri) {
     final link = uri.toString();
-    debugPrint('🔗 Incoming deep link: $link');
+    debugPrint("🔥 Warm deep link: $link");
 
-    // ---- EMAIL VERIFICATION ----
-    // You’re redirecting to: cairosapp://verified?verified=1
     if (link.contains('verified=1')) {
-      setState(() {
-        _startScreen = const VerifiedScreen();
-      });
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const VerifiedScreen()),
+      );
       return;
     }
 
-    // ---- RESET PASSWORD ----
-    // For example: cairosapp://reset-password?uid=...&token=...
     if (link.contains('reset')) {
       final uid = uri.queryParameters['uid'];
       final token = uri.queryParameters['token'];
 
       if (uid != null && token != null) {
-        setState(() {
-          _startScreen = ResetPasswordScreen(uid: uid, token: token);
-        });
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResetPasswordScreen(uid: uid, token: token),
+          ),
+        );
       }
-      return;
+    }
+  }
+
+  void handleSplashFinished(BuildContext context) async {
+    if (_pendingInitialLink != null) {
+      final uri = _pendingInitialLink!;
+      final link = uri.toString();
+
+      debugPrint("🔗 Handling pending deep link after splash: $link");
+
+      if (link.contains('verified=1')) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const VerifiedScreen()),
+        );
+        return;
+      }
+
+      if (link.contains('reset')) {
+        final uid = uri.queryParameters['uid'];
+        final token = uri.queryParameters['token'];
+
+        if (uid != null && token != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ResetPasswordScreen(uid: uid, token: token),
+            ),
+          );
+          return;
+        }
+      }
     }
 
-    // Fallback if link is unknown → go to login
-    setState(() {
-      _startScreen = const LoginScreen();
-    });
+    // No deep link → go to login or dashboard depending on token
+    final token = await ApiService.getToken();
+    if (token != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const BottomNav()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
 
-      // 👇 Named routes for your app
+      theme: AppTheme.lightTheme, // 👈 USE THE NEW THEME
+
+      home: Builder(
+        builder: (context) {
+          return SplashScreen(onFinish: () => handleSplashFinished(context));
+        },
+      ),
+
       routes: {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
         '/forgot': (_) => const ForgotPasswordScreen(),
-        '/reset-password': (_) => const ResetPasswordScreen(uid: '', token: ''),
-
-        // Main app navigation after login
         '/dashboard': (_) => const BottomNav(),
       },
     );

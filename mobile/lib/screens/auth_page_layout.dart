@@ -161,7 +161,7 @@ class AuthPageLayout extends StatelessWidget {
                             ],
                           ),
                           child: Container(
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withOpacity(0.0),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: child,

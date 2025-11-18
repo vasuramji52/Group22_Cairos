@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { buildPath } from "./path";
 import { storeToken } from "../tokenStorage";
 import { Button } from "./ui/button";
@@ -12,59 +13,9 @@ function Login() {
   const [message, setMessage] = useState("");
   const [loginName, setLoginName] = useState("");
   const [loginPassword, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // default: hidden
 
   const navigate = useNavigate();
-
-  // async function doLogin(event: any): Promise<void> {
-  //   event.preventDefault();
-
-  //   const obj = { email: loginName, password: loginPassword };
-  //   const js = JSON.stringify(obj);
-
-  //   try {
-  //     const response = await fetch(buildPath("api/login"), {
-  //       method: "POST",
-  //       body: js,
-  //       headers: { "Content-Type": "application/json" },
-  //     });
-
-  //     const res = await response.json();
-  //     if (!response.ok || !res.accessToken) {
-  //       console.error("Login failed:", res.error);
-  //       setMessage(res.error || "User/Password combination incorrect");
-  //       return;
-  //     }
-
-  //     const token = res.accessToken;
-  //     //storeToken(token);
-  //     storeToken({ accessToken: token });
-
-  //     const decoded = jwtDecode<DecodedToken>(token);
-
-  //     try {
-  //       var ud = decoded;
-  //       var userId = ud.iat;
-  //       const firstName = ud.firstName;
-  //       const lastName = ud.lastName;
-
-  //       if (userId <= 0) {
-  //         setMessage("User/Password combination incorrect");
-  //       } else {
-  //         var user = { firstName: firstName, lastName: lastName, id: userId };
-  //         localStorage.setItem("user_data", JSON.stringify(user));
-
-  //         setMessage("");
-  //         window.location.href = "/cards";
-  //       }
-  //     } catch (e) {
-  //       console.log(e);
-  //       return;
-  //     }
-  //   } catch (error: any) {
-  //     alert(error.toString());
-  //     return;
-  //   }
-  // }
 
   async function doLogin(event: any): Promise<void> {
     event.preventDefault();
@@ -85,10 +36,8 @@ function Login() {
       }
 
       const token = data.accessToken;
-      // store token correctly
       storeToken({ accessToken: token });
 
-      // get canonical user info
       const meResp = await fetch(buildPath("api/me"), {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -102,20 +51,11 @@ function Login() {
       localStorage.setItem("user_data", JSON.stringify(user));
 
       setMessage("");
-      // Prefer SPA navigation
       navigate("/cards");
     } catch (err: any) {
       console.error(err);
       setMessage("Something went wrong. Please try again.");
     }
-  }
-
-  function handleSetLoginName(e: any): void {
-    setLoginName(e.target.value);
-  }
-
-  function handleSetPassword(e: any): void {
-    setPassword(e.target.value);
   }
 
   return (
@@ -127,6 +67,7 @@ function Login() {
 
       {/* Core login form */}
       <form onSubmit={doLogin} className="space-y-6">
+        {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="loginName" className="text-[#1B4B5A]">
             Email
@@ -136,25 +77,59 @@ function Login() {
             type="text"
             placeholder="cleopatra@cairos.com"
             value={loginName}
-            onChange={handleSetLoginName}
+            onChange={(e) => setLoginName(e.target.value)}
             className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] placeholder:text-[#1B4B5A]/40"
             required
           />
         </div>
 
+        {/* Password with eye icon INSIDE the same-style box */}
         <div className="space-y-2">
           <Label htmlFor="loginPassword" className="text-[#1B4B5A]">
             Password
           </Label>
-          <Input
-            id="loginPassword"
-            type="password"
-            placeholder="Enter your password"
-            value={loginPassword}
-            onChange={handleSetPassword}
-            className="bg-white/80 border-[1.5px] border-[#2C6E7E] focus:border-[#1B4B5A] text-[#1B4B5A] placeholder:text-[#1B4B5A]/40"
-            required
-          />
+          <div className="relative">
+            <Input
+              id="loginPassword"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={loginPassword}
+              onChange={(e) => setPassword(e.target.value)}
+              className="
+                bg-white/80 
+                border-[1.5px] 
+                border-[#2C6E7E] 
+                focus:border-[#1B4B5A] 
+                text-[#1B4B5A] 
+                placeholder:text-[#1B4B5A]/40
+                pr-12                /* space for eye icon */
+              "
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="
+                absolute 
+                right-4 
+                top-1/2 
+                -translate-y-1/2 
+                flex 
+                items-center 
+                justify-center 
+                text-[#1B4B5A] 
+                hover:text-[#0D3441] 
+                transition
+              "
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <Eye className="w-5 h-5" />
+              ) : (
+                <EyeOff className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Forgot Password */}

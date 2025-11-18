@@ -3,7 +3,7 @@ import '../theme.dart';
 import 'dashboard_screen.dart';
 import 'friends_screen.dart';
 import 'schedule_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -14,25 +14,45 @@ class BottomNav extends StatefulWidget {
 
 class _BottomNavState extends State<BottomNav> {
   int _index = 0;
+  
+  void _onNavTap(int index) {
+    setState(() => _index = index);
+  }
 
-  final screens = const [
-    DashboardScreen(),
-    FriendsScreen(),
-    ScheduleScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> screens;
+
+  @override
+  void initState() {
+    super.initState();
+    screens = [
+      DashboardScreen(onNavigate: _onNavTap),
+      const FriendsScreen(),
+      const ScheduleScreen(),
+      const SettingsScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: screens[_index],
-
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.darkTeal, AppColors.accentTeal],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: screens[_index],
+      ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: AppColors.darkTeal,
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         selectedItemColor: AppColors.gold,
         unselectedItemColor: AppColors.bronze,
-        backgroundColor: AppColors.darkTeal,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(

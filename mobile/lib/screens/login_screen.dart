@@ -1,12 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mobile/screens/bottom_nav.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'auth_page_layout.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
-import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,38 +17,36 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
+  bool _passwordVisible = false;
   String message = '';
 
   void login() async {
-    final email = emailController.text;
-    final password = passwordController.text;
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
 
     final response = await ApiService.loginUser(email, password);
     final body = response.body;
 
     if (response.statusCode == 200) {
-      setState(() => message = 'Login successful!');
-      // navigate to your home page
+      final token = json.decode(response.body)['accessToken'] as String;
+      await ApiService.storeToken(token);
 
-      // Navigate to main app
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => const BottomNav()),
-      // );
-
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const BottomNav()),
+      );
     } else {
-      // Decode backend error message
-      String errorMsg = 'Login failed. Please try again.';
+      String errorMsg = 'Login failed.';
+
       try {
         final Map<String, dynamic> json = jsonDecode(body);
         if (json['error'] == 'User email not verified') {
-          errorMsg = 'Please verify your email before logging in.';
+          errorMsg = 'Please verify your email.';
         } else if (json['error'] == 'Invalid email' ||
             json['error'] == 'Invalid password') {
           errorMsg = 'Invalid email or password.';
-        } else if (json['error'] == 'missing_fields') {
-          errorMsg = 'Please fill in all fields.';
         }
       } catch (_) {}
 
@@ -59,84 +56,230 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthPageLayout(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Welcome Back',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.darkTeal,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Log in to seize your kairos',
-            style: TextStyle(color: AppColors.darkTeal),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: emailController,
-            decoration: InputDecoration(
-              labelText: 'Email',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.8),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Password',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.8),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: login,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentTeal,
-              foregroundColor: AppColors.gold,
-              minimumSize: const Size(double.infinity, 48),
-            ),
-            child: const Text('Log In'),
-          ),
+    final textTheme = Theme.of(context).textTheme;
 
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-              );
-            },
-            child: const Text(
-              'Forgot Password?',
-              style: TextStyle(color: AppColors.accentTeal),
+    return Scaffold(
+      backgroundColor: AppColors.darkTeal,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ---- LOGO + SLOGAN ----
+                const Icon(Icons.access_time, color: AppColors.gold, size: 48),
+                const SizedBox(height: 10),
+
+                // HERO TITLE — use theme like Settings / Dashboard
+                Text(
+                  'Cairos',
+                  style: textTheme.headlineMedium?.copyWith(
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // HERO SUBTITLE — same pattern as Settings subtitle
+                Text(
+                  'Find your moment',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: AppColors.bronze,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // ---- LOGIN CARD ----
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 26,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.beige,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: AppColors.gold, width: 1.3),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkTeal,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Log in to seize your kairos',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: AppColors.accentTeal,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // EMAIL
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(fontFamily: 'Nunito'),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppColors.accentTeal,
+                          ),
+                          labelText: 'Email',
+                          labelStyle:
+                              const TextStyle(fontFamily: 'Nunito'),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                              color: AppColors.darkTeal,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // PASSWORD
+                      TextField(
+                        controller: passwordController,
+                        obscureText: !_passwordVisible,
+                        style: const TextStyle(fontFamily: 'Nunito'),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppColors.accentTeal,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _passwordVisible
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: AppColors.accentTeal,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _passwordVisible = !_passwordVisible;
+                              });
+                            },
+                          ),
+                          labelText: 'Password',
+                          labelStyle:
+                              const TextStyle(fontFamily: 'Nunito'),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                              color: AppColors.darkTeal,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // LOGIN BUTTON
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentTeal,
+                            foregroundColor: AppColors.gold,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      if (message.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            message,
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              color: Colors.redAccent,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+
+                      // ---- LINKS ----
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: AppColors.accentTeal,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Don't have an account? Sign up",
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: AppColors.accentTeal,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const RegisterScreen()),
-              );
-            },
-            child: const Text(
-              "Don't have an account? Sign up",
-              style: TextStyle(color: AppColors.accentTeal),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-          Text(message, style: const TextStyle(color: Colors.redAccent)),
-        ],
+        ),
       ),
     );
   }

@@ -38,8 +38,24 @@ async function start() {
 
     const corsOptions = {
       origin: function (origin, cb) {
-        if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-        return cb(new Error("Not allowed by CORS: " + origin));
+        if (!origin) return cb(null, true);
+
+        // Allow ALL localhost ports (Flutter Web, React Dev)
+        if (origin.startsWith("http://localhost")) return cb(null, true);
+        if (origin.startsWith("http://127.0.0.1")) return cb(null, true);
+
+        // Allow LAN IP access (mobile/Flutter Web)
+        if (origin.startsWith("http://192.168.86.")) return cb(null, true);
+
+        // Production
+        if (
+          origin === "https://vasupradha.xyz" ||
+          origin === "https://www.vasupradha.xyz"
+        ) {
+          return cb(null, true);
+        }
+
+        return cb(new Error("CORS blocked: " + origin));
       },
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "x-platform"],
@@ -64,6 +80,7 @@ async function start() {
     const me = require("./me.js");
     const oauth = require('./oauth.google.js');
     const friend = require('./friends.js')
+    const availability = require('./availability.js');
 
     auth.setApp(app, client);
     if (api.setApp) {
@@ -72,6 +89,7 @@ async function start() {
     me.setApp(app, client);
     oauth.setApp(app, client);
     friend.setApp(app, client);
+    availability.setApp(app, client);
     // optional healthcheck
     app.get("/api/ping", (_req, res) => res.json({ ok: true }));
 
