@@ -145,7 +145,7 @@ function Login() {
 
         <Button
           type="submit"
-          className="w-full bg-[#2C6E7E] hover:bg-[#1B4B5A] text-[#FFD700]"
+          className="w-full bg-[#215969] hover:bg-[#1B4B5A] text-[#FFD700]"
         >
           Log In
         </Button>

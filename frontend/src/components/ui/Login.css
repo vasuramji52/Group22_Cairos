@@ -1,4 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&display=swap');
+/* 400 Regular */
+@font-face {
+  font-family: 'Crimson Pro';
+  src: url('/fonts/crimson-pro/CrimsonPro-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 500 Medium */
+@font-face {
+  font-family: 'Crimson Pro';
+  src: url('/fonts/crimson-pro/CrimsonPro-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 600 Semibold */
+@font-face {
+  font-family: 'Crimson Pro';
+  src: url('/fonts/crimson-pro/CrimsonPro-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 700 Bold */
+@font-face {
+  font-family: 'Crimson Pro';
+  src: url('/fonts/crimson-pro/CrimsonPro-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -193,5 +227,9 @@ html {
 @layer utilities {
   .bg-\[\#C1440E\] {
     background-color: #c1440e;
+  }
+
+  .bg-\[\#215969\] {
+    background-color: #215969;
   }
 }

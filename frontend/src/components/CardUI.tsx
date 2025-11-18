@@ -104,7 +104,7 @@ function CardUI()
               {pendingCount > 0 && (
                 <span
                   className="absolute top-1/2 -translate-y-1/2 right-4 bg-[#C1440E] text-white 
-                             text-xs font-bold w-5 h-5 flex items-center justify-center
+                             text-xs font-semibold w-5 h-5 flex items-center justify-center
                              rounded-full border border-red-900 shadow"
                 >
                   {pendingCount}
