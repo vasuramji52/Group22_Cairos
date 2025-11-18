@@ -109,11 +109,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Connected Accounts',
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            fontSize: 20,
+                          style: textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.darkTeal,
                           ),
@@ -122,8 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            border:
-                                Border.all(color: AppColors.gold, width: 1),
+                            border: Border.all(color: AppColors.gold, width: 1),
                             borderRadius: BorderRadius.circular(8),
                             color: Colors.white,
                           ),
@@ -139,24 +136,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       color: Colors.blue,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Text(
                                         'G',
-                                        style: TextStyle(
-                                          fontFamily: 'Nunito',
+                                        style: textTheme.bodyLarge?.copyWith(
+                                          fontWeight: FontWeight.w800,
                                           color: Colors.white,
-                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text(
+                                  Text(
                                     'Google Calendar',
-                                    style: TextStyle(
-                                      fontFamily: 'Nunito',
-                                      color: AppColors.darkTeal,
+                                    style: textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.w600,
+                                      color: AppColors.darkTeal,
                                     ),
                                   ),
                                 ],
@@ -176,13 +171,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   user?.google.connected == true
                                       ? 'Connected'
                                       : 'Not Connected',
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
                                     color: user?.google.connected == true
                                         ? Colors.green[900]
                                         : const Color(0xFFC1440E),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
@@ -199,11 +192,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Account Actions',
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            fontSize: 20,
+                          style: textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.darkTeal,
                           ),
@@ -227,11 +218,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Change Password',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
+                              style: textTheme.bodyMedium?.copyWith(
                                 color: AppColors.accentTeal,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -256,20 +247,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   LucideIcons.logOut,
                                   color: Color(0xFFC1440E),
                                   size: 18,
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Logout',
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    color: Color(0xFFC1440E),
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFFC1440E),
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -283,25 +274,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // ---------- FOOTER ----------
                   Center(
                     child: Column(
-                      children: const [
-                        Icon(LucideIcons.sparkles,
-                            color: AppColors.gold, size: 32),
-                        SizedBox(height: 12),
+                      children: [
+                        const Icon(
+                          LucideIcons.sparkles,
+                          color: AppColors.gold,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           'Cairos - Find Your Perfect Moment',
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            color: Color(0xFFC5A572),
-                            fontSize: 14,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFFC5A572),
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Version 1.1.6',
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            color: Color(0xFFC5A572),
-                            fontSize: 12,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFC5A572),
                           ),
                         ),
                       ],
@@ -321,59 +311,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.beige,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: AppColors.gold),
-        ),
-        title: const Text(
-          'Logout?',
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            color: AppColors.darkTeal,
+      builder: (dialogCtx) {
+        final textTheme = Theme.of(dialogCtx).textTheme;
+
+        return AlertDialog(
+          backgroundColor: AppColors.beige,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppColors.gold),
           ),
-        ),
-        content: const Text(
-          'Are you sure you want to logout? You\'ll need to sign in again to access your account.',
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            color: AppColors.accentTeal,
-          ),
-        ),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFC1440E), width: 1),
-              backgroundColor: Colors.white,
+          title: Text(
+            'Logout?',
+            style: textTheme.titleMedium?.copyWith(
+              color: AppColors.darkTeal,
+              fontWeight: FontWeight.w700,
             ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                color: Color(0xFFC1440E),
+          ),
+          content: Text(
+            'Are you sure you want to logout? You\'ll need to sign in again to access your account.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: AppColors.accentTeal,
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFC1440E), width: 1),
+                backgroundColor: Colors.white,
+              ),
+              child: Text(
+                'Cancel',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFC1440E),
+                ),
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              doLogout();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text(
-              'Logout',
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                color: Colors.white,
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                doLogout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(
+                'Logout',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -384,104 +375,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.beige,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: AppColors.gold),
-          ),
-          title: const Text(
-            'Reset your password',
-            style: TextStyle(
-              fontFamily: 'Nunito',
-              color: AppColors.darkTeal,
+      builder: (dialogCtx) {
+        final textTheme = Theme.of(dialogCtx).textTheme;
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: AppColors.beige,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: AppColors.gold),
             ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Enter your email address, and we\'ll send you a password reset link.',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  color: AppColors.accentTeal,
-                ),
+            title: Text(
+              'Reset your password',
+              style: textTheme.titleMedium?.copyWith(
+                color: AppColors.darkTeal,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(fontFamily: 'Nunito'),
-                decoration: const InputDecoration(
-                  hintText: 'you@gmail.com',
-                  hintStyle: TextStyle(fontFamily: 'Nunito'),
-                  border: OutlineInputBorder(),
-                  fillColor: Colors.white,
-                  filled: true,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enter your email address, and we\'ll send you a password reset link.',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppColors.accentTeal,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          setDialogState(() => isLoading = true);
-                          try {
-                            await ApiService.forgotPassword(
-                              emailController.text.trim(),
-                            );
-                            if (mounted) {
-                              showSuccessSnackBar(
-                                'If that email exists, a link was sent.',
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: textTheme.bodyMedium,
+                  decoration: const InputDecoration(
+                    hintText: 'you@gmail.com',
+                    border: OutlineInputBorder(),
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            setDialogState(() => isLoading = true);
+                            try {
+                              await ApiService.forgotPassword(
+                                emailController.text.trim(),
                               );
-                              Navigator.pop(context);
+                              if (mounted) {
+                                showSuccessSnackBar(
+                                  'If that email exists, a link was sent.',
+                                );
+                                Navigator.pop(dialogCtx);
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                showErrorSnackBar('Failed to send reset link');
+                              }
+                            } finally {
+                              setDialogState(() => isLoading = false);
                             }
-                          } catch (e) {
-                            if (mounted) {
-                              showErrorSnackBar('Failed to send reset link');
-                            }
-                          } finally {
-                            setDialogState(() => isLoading = false);
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentTeal,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentTeal,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      isLoading ? 'Sending...' : 'Send reset link',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    isLoading ? 'Sending...' : 'Send reset link',
-                    style: const TextStyle(
-                      fontFamily: 'Nunito',
-                      color: AppColors.gold,
-                    ),
+                ),
+              ],
+            ),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFC1440E), width: 1),
+                  backgroundColor: Colors.white,
+                ),
+                child: Text(
+                  'Cancel',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFC1440E),
                   ),
                 ),
               ),
             ],
           ),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFC1440E), width: 1),
-                backgroundColor: Colors.white,
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  color: Color(0xFFC1440E),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
