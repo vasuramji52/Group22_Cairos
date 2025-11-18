@@ -44,7 +44,7 @@ export function ScheduleCombine() {
   const [friends, setFriends] = useState<FriendDTO[]>([]);
   const [selectedFriendId, setSelectedFriendId] = useState("");
 
-  // 🔹 NEW: date range instead of single date
+  // date range instead of single date
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -59,6 +59,74 @@ export function ScheduleCombine() {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [ meetingTitle, setMeetingTitle ] = useState("");
+
+  // how many slots & gap between them
+  const MAX_SLOTS = 4;
+  const GAP_MINUTES = 0; // next slot must be at least 30 min after previous
+
+  function addMinutes(date: Date, minutes: number) {
+    return new Date(date.getTime() + minutes * 60_000);
+  }
+
+  function extractFirstSlot(resp: any): Suggestion | null {
+    const first =
+      resp.slot ??
+      resp.firstSlot ??
+      (resp.slotStart && resp.slotEnd
+        ? { start: resp.slotStart, end: resp.slotEnd }
+        : null) ??
+      (Array.isArray(resp.slots) ? resp.slots[0] ?? null : null);
+
+    if (!first || !first.start || !first.end) return null;
+    return { start: first.start, end: first.end };
+  }
+
+  async function findSequentialSlots(
+    userA: string,
+    userB: string,
+    startDateStr: string,
+    endDateStr: string,
+    minutes: number,
+    tz: string,
+    workStart: string,
+    workEnd: string
+  ): Promise<Suggestion[]> {
+    const apiStartTime = "00:00";
+    const apiEndTime = "23:59";
+
+    let currentStart = new Date(`${startDateStr}T${apiStartTime}:00`);
+    const windowEnd = new Date(`${endDateStr}T${apiEndTime}:00`);
+
+    const results: Suggestion[] = [];
+
+    while (results.length < MAX_SLOTS && currentStart < windowEnd) {
+      const resp = await availabilityFirst({
+        userA,
+        userB,
+        start: currentStart.toISOString(),
+        end: windowEnd.toISOString(),
+        tz,
+        minutes,
+        workStart,
+        workEnd,
+      });
+
+      if (resp.error === "no_slot") {
+        break;
+      }
+
+      const slot = extractFirstSlot(resp);
+      if (!slot) break;
+
+      results.push(slot);
+
+      // move start to just after this slot plus the gap
+      currentStart = addMinutes(new Date(slot.end), GAP_MINUTES);
+    }
+
+    return results;
+  }
 
   useEffect(() => {
     (async () => {
@@ -98,7 +166,7 @@ export function ScheduleCombine() {
 
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-    // 🔹 Default: start = tomorrow, end = 3 days after that
+    // Default: start = tomorrow, end = 3 days after that
     const t = new Date();
     t.setDate(t.getDate() + 1);
     const startStr = t.toISOString().split("T")[0];
@@ -112,7 +180,7 @@ export function ScheduleCombine() {
   }, []);
 
   async function handleFindTime() {
-    if (!selectedFriendId || !startDate || !endDate) {
+    if (!selectedFriendId || !startDate || !endDate || !meetingTitle) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -128,60 +196,33 @@ export function ScheduleCombine() {
     }
 
     setLoading(true);
-
-    const apiStartTime = "00:00";
-    const apiEndTime = "23:59";
     const durationMinutes = parseInt(duration, 10) || 30;
 
     try {
       const userA = currentUserId;
       const userB = selectedFriendId;
 
-      // 🔑 Build start/end Date objects covering the whole date range
-      const start = new Date(`${startDate}T${apiStartTime}:00`);
-      const end = new Date(`${endDate}T${apiEndTime}:00`);
-
-      const resp: any = await availabilityFirst({
+      const slots = await findSequentialSlots(
         userA,
         userB,
-        start: start.toISOString(),
-        end: end.toISOString(),
-        tz: timezone,
-        minutes: durationMinutes,
+        startDate,
+        endDate,
+        durationMinutes,
+        timezone,
         workStart,
-        workEnd,
-      });
+        workEnd
+      );
 
-      console.log("availabilityFirst resp", resp);
-
-      if (resp.ok === false && resp.error === "no_slot") {
+      if (slots.length === 0) {
         setSuggestions([]);
         setShowSuggestions(true);
         toast.info("No available times found in this window");
-        return;
-      }
-
-      if (resp.error && resp.error !== "no_slot") {
-        throw new Error(resp.error);
-      }
-
-      const first =
-        resp.slot ??
-        resp.firstSlot ??
-        (resp.slotStart && resp.slotEnd
-          ? { start: resp.slotStart, end: resp.slotEnd }
-          : null) ??
-        (Array.isArray(resp.slots) ? resp.slots[0] ?? null : null);
-
-      if (first && first.start && first.end) {
-        const slot: Suggestion = { start: first.start, end: first.end };
-        setSuggestions([slot]);
-        setShowSuggestions(true);
-        toast.success("Found an available time!");
       } else {
-        setSuggestions([]);
+        setSuggestions(slots);
         setShowSuggestions(true);
-        toast.info("No available times found in this window");
+        toast.success(
+          `Found ${slots.length} available time${slots.length > 1 ? "s" : ""}!`
+        );
       }
     } catch (err: any) {
       console.error(err);
@@ -239,14 +280,14 @@ export function ScheduleCombine() {
                 Find the Perfect Time
               </h1>
               <p className="text-[#C5A572]">
-                Combine schedules to discover your Kairos
+                Combine schedules to discover your Cairos
               </p>
             </div>
           </div>
           <EgyptianBorder className="my-4" />
         </div>
 
-        {/* Form (always visible) */}
+        {/* Form */}
         <PapyrusCard>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-[#1B4B5A]">
@@ -285,6 +326,19 @@ export function ScheduleCombine() {
                   )}
                 </SelectContent>
               </Select>
+            </div>
+            {/*Meeting Title*/}
+            <div className="space-y-2">
+              <Label htmlFor="meetingTitle" className="text-[#1B4B5A]">
+                Meeting Title
+              </Label>
+              <Input
+                id="meetingTitle"
+                placeholder="E.g., Project Discussion"
+                className="bg-white border-[#D4AF37]"
+                value={meetingTitle}
+                onChange={(e) => setMeetingTitle(e.target.value)}
+              />
             </div>
 
             {/* Date range */}
@@ -397,7 +451,6 @@ export function ScheduleCombine() {
 
       {/* Results Modal */}
       <AlertDialog open={showSuggestions} onOpenChange={setShowSuggestions}>
-        {/* Papyrus background wrapper, like pending-requests modal */}
         <AlertDialogContent className="bg-transparent border-none shadow-none p-0">
           <PapyrusCard className="border-2 border-[#D4AF37] max-w-xl w-full mx-auto">
             <div className="p-6 pb-8">
@@ -407,49 +460,86 @@ export function ScheduleCombine() {
                   Meeting Details
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-[#2C6E7E] mb-2">
-                  Here&apos;s the best time we found based on both schedules.
+                  Here&apos;s the best times we found based on both schedules.
                 </AlertDialogDescription>
               </AlertDialogHeader>
 
-              <div className="mt-4 space-y-3">
-                {firstSuggestion ? (
-                  // Single lighter-beige box with all info combined
-                  <div className="w-full flex items-center justify-between px-4 py-4 rounded-xl border border-[#D4AF37]/40 bg-[#FAF4E6] shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
-                        {(
-                          nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
-                          "?"
-                        ).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-[#1B4B5A] font-semibold">
-                          Meeting with{" "}
-                          {selectedFriend ? nameOf(selectedFriend) : "Friend"}
-                        </p>
-                        <p className="text-[#2C6E7E]">
-                          {meetingDate ? formatDate(meetingDate) : "Date not set"}
-                        </p>
-                        <p className="text-[#946923]">{durationLabel}</p>
-                        <p className="text-[#1B4B5A] mt-1">
-                          {formatTime(firstSuggestion.start)} –{" "}
-                          {formatTime(firstSuggestion.end)}
-                        </p>
+              <div className="mt-4 space-y-4">
+                {suggestions.length > 0 ? (
+                  <>
+                    {/* Who / date / duration */}
+                    <PapyrusCard>
+                      <CardContent className="py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
+                            {(
+                              nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
+                              "?"
+                            ).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="text-[#1B4B5A]">
+                              {" "} {meetingTitle} with {" "}
+                              {selectedFriend ? nameOf(selectedFriend) : "Friend"}
+                            </h3>
+                            {/*<p className="text-[#2C6E7E]">
+                              {meetingDate ? formatDate(meetingDate) : "Date not set"}
+                            </p> */}
+                            <p className="text-[#946923]">{durationLabel}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </PapyrusCard>
+
+                    {/* Slots list */}
+                    <div>
+                      <h2 className="text-[#D4AF37] mb-3 flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Available Time Slot{suggestions.length > 1 ? "s" : ""} (
+                        {suggestions.length})
+                      </h2>
+                      <div className="space-y-3">
+                        {suggestions.map((s, i) => (
+                          <PapyrusCard
+                            key={i}
+                            className="hover:shadow-xl transition-shadow"
+                          >
+                            <CardContent className="py-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex flex-col items-center justify-center text-[#1B4B5A]">
+                                    <span className="text-xs">Slot</span>
+                                    <span>{i + 1}</span>
+                                  </div>
+                                  <div>
+                                    <p className="text-[#1B4B5A]">
+                                      {formatTime(s.start)} – {formatTime(s.end)}
+                                    </p>
+                                    <p className="text-[#2C6E7E]">
+                                    {formatDate(s.start)}
+                                   </p> 
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </PapyrusCard>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
-                  // Same style box, but with "no slot" message
-                  <div className="w-full px-4 py-6 rounded-xl border border-[#D4AF37]/40 bg-[#FAF4E6] shadow-sm text-center">
-                    <Clock className="w-8 h-8 mx-auto mb-2 text-[#C5A572]" />
-                    <p className="text-[#2C6E7E] mb-1">
-                      No available times found
-                    </p>
-                    <p className="text-[#C5A572] text-sm">
-                      Try adjusting your work hours, duration, or choosing a
-                      different date.
-                    </p>
-                  </div>
+                  <PapyrusCard>
+                    <CardContent className="py-8 text-center">
+                      <Clock className="w-10 h-10 mx-auto mb-3 text-[#C5A572]" />
+                      <p className="text-[#2C6E7E] mb-1">
+                        No available times found
+                      </p>
+                      <p className="text-[#C5A572] text-sm">
+                        Try adjusting your work hours, duration, or choosing a
+                        different date.
+                      </p>
+                    </CardContent>
+                  </PapyrusCard>
                 )}
               </div>
 
