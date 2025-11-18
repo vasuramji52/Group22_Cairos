@@ -23,19 +23,23 @@ export async function getMeReal() {
   return data.user;
 }
 
+/* ---------- Availability API ---------- */
+
 // Minimal, typed wrapper around GET /api/availability/first
 
 export interface AvailabilityFirstParams {
   userA: string;
   userB: string;
-  date: string;          // yyyy-mm-dd
-  startTime: string;     // HH:mm
-  endTime: string;       // HH:mm
-  tz: string;            // IANA tz, e.g. "America/New_York"
-  minutes: number;       // meeting duration
-  workStart: string;     // HH:mm
-  workEnd: string;       // HH:mm
-  //baseUrl?: string;      // override if not localhost
+
+  // full window in ISO strings (built in the component)
+  start: string;          // ISO
+  end: string;            // ISO
+
+  tz: string;             // IANA tz, e.g. "America/New_York"
+  minutes: number;        // meeting duration in minutes
+
+  workStart: string;      // "HH:mm" (e.g. "09:00")
+  workEnd: string;        // "HH:mm" (e.g. "17:00")
 }
 
 export interface TimeSlot {
@@ -52,70 +56,19 @@ export interface AvailabilityFirstResponse {
   error?: string;
 }
 
-
-// export async function availabilityFirst(params: AvailabilityFirstParams): Promise<AvailabilityFirstResponse> {
-//   const {
-//     userA, userB, date, startTime, endTime, tz, minutes, workStart, workEnd,
-//     baseUrl = "http://localhost:5000",
-//   } = params;
-
-//   const startISO = new Date(`${date}T${startTime}:00`).toISOString();
-//   const endISO   = new Date(`${date}T${endTime}:00`).toISOString();
-
-//   // convert "09:00" -> "9", "17:00" -> "17"
-//   const workStartHour = workStart.split(":")[0]; // "09" -> "09"
-//   const workEndHour   = workEnd.split(":")[0];   // "17" -> "17"
-
-//   const qs = new URLSearchParams({
-//     userA,
-//     userB,
-//     minutes: String(minutes),
-//     start: startISO,
-//     end: endISO,
-//     tz,
-//     workStart: String(Number(workStartHour)), // "09" -> "9"
-//     workEnd:   String(Number(workEndHour)),   // "17" -> "17"
-//   });
-
-//   console.log("🔵 availabilityFirst → sending:", {
-//   userA,
-//   userB,
-//   date,
-//   startTime,
-//   endTime,
-//   tz,
-//   minutes,
-//   workStart,
-//   workEnd,
-//   url: `/api/availability/first?${params.toString()}`
-// });
-
-//   const res = await fetch(`${baseUrl}/api/availability/first?${qs.toString()}`);
-//   if (!res.ok) {
-//     const text = await res.text().catch(() => "");
-//     throw new Error(text || `Request failed (${res.status})`);
-//   }
-//   return res.json();
-// }
-
-
 export async function availabilityFirst(
   params: AvailabilityFirstParams
 ): Promise<AvailabilityFirstResponse> {
   const {
     userA,
     userB,
-    date,
-    startTime,
-    endTime,
+    start,
+    end,
     tz,
     minutes,
     workStart,
     workEnd,
   } = params;
-
-  const startISO = new Date(`${date}T${startTime}:00`).toISOString();
-  const endISO   = new Date(`${date}T${endTime}:00`).toISOString();
 
   // convert "09:00" -> "9", "17:00" -> "17"
   const workStartHour = workStart.split(":")[0];
@@ -125,8 +78,8 @@ export async function availabilityFirst(
     userA,
     userB,
     minutes: String(minutes),
-    start: startISO,
-    end: endISO,
+    start,                     // already ISO
+    end,                       // already ISO
     tz,
     workStart: String(Number(workStartHour)), // "09" -> "9"
     workEnd:   String(Number(workEndHour)),   // "17" -> "17"
@@ -135,9 +88,8 @@ export async function availabilityFirst(
   console.log("🔵 availabilityFirst → sending:", {
     userA,
     userB,
-    date,
-    startTime,
-    endTime,
+    start,
+    end,
     tz,
     minutes,
     workStart,
@@ -145,7 +97,6 @@ export async function availabilityFirst(
     url: `/api/availability/first?${qs.toString()}`,
   });
 
-  // ✅ use the shared `api()` helper, which already uses VITE_BACKEND_URL
   const res = await api(`/api/availability/first?${qs.toString()}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -153,6 +104,3 @@ export async function availabilityFirst(
   }
   return res.json();
 }
-
-
-
