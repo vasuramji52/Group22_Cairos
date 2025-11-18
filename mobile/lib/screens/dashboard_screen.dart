@@ -1,11 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../theme.dart';
 import '../styles/card_ui_styles.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 
 class DashboardScreen extends StatefulWidget {
   final Function(int) onNavigate;
@@ -18,7 +20,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool loading = true;
   bool connecting = false;
-  bool googleConnected = false;
   User? user;
 
   @override
@@ -30,16 +31,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> loadUser() async {
     try {
       final fetchedUser = await ApiService.getMeReal();
-      if (fetchedUser != null) {
-        setState(() {
-          user = fetchedUser;
-          loading = false;
-        });
-      } else {
-        setState(() => loading = false);
-      }
+      setState(() {
+        user = fetchedUser;
+        loading = false;
+      });
     } catch (err) {
-      print("Failed to load user: $err");
+      debugPrint("Failed to load user: $err");
       setState(() => loading = false);
     }
   }
@@ -55,39 +52,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (urlString == null) throw Exception('No auth URL from init');
 
       final url = Uri.parse(urlString);
-      // Open the Google OAuth consent screen
       if (await canLaunchUrl(url)) {
         await launchUrl(url);
       } else {
         throw Exception('Could not launch $url');
       }
     } catch (error) {
-      print('Failed to start Google OAuth: $error');
+      debugPrint('Failed to start Google OAuth: $error');
       setState(() => connecting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final textTheme = Theme.of(context).textTheme;
+
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: loadUser,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            // Welcome Header
-            TopBanner(
-              title: 'Welcome back, ${user?.firstName ?? 'User'}',
-              subtitle: 'Find the perfect moment to connect',
-              icon: const Icon(
-                LucideIcons.clock,
+            // 🔹 HEADER 1 — Cinzel via headlineMedium (keep special)
+            Text(
+              'Welcome back, ${user?.firstName ?? 'Explorer'}',
+              style: textTheme.headlineMedium?.copyWith(color: AppColors.gold),
+            ),
+            const SizedBox(height: 4),
+
+            // 🔹 HEADER 2 — Cormorant via titleMedium (keep special)
+            Text(
+              'Find the perfect moment to connect',
+              style: textTheme.titleMedium?.copyWith(
                 color: AppColors.gold,
-                size: 50,
               ),
             ),
             const SizedBox(height: 24),
-            Column(children: const [EgyptianBorder(), SizedBox(height: 16)]),
 
+            const EgyptianBorder(),
+            const SizedBox(height: 16),
+
+            // Google Calendar connection card
             PapyrusCard(
               icon: const Icon(
                 LucideIcons.calendar,
@@ -99,10 +108,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     'Google Calendar Connection',
-                    style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkTeal,
+                    ),
                   ),
-                  SizedBox(height: 8),
-
+                  const SizedBox(height: 8),
                   if (user?.google.connected == true)
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -113,67 +124,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(LucideIcons.sparkle, color: Colors.green),
-                          SizedBox(width: 8),
+                          const Icon(LucideIcons.sparkle, color: Colors.green),
+                          const SizedBox(width: 8),
                           Text(
-                            "Connected successfully",
-                            style: TextStyle(color: AppColors.darkTeal),
+                            'Connected successfully',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: AppColors.darkTeal,
+                            ),
                           ),
                         ],
                       ),
                     )
                   else
-                    ElevatedButton(
+                    FilledButton.icon(
                       onPressed: connecting ? null : handleConnectGoogle,
-                      style: ElevatedButton.styleFrom(
+                      icon: connecting
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(LucideIcons.link),
+                      label: Text(
+                        connecting
+                            ? 'Connecting...'
+                            : 'Connect Google Calendar',
+                        style: textTheme.bodyMedium,
+                      ),
+                      style: FilledButton.styleFrom(
                         backgroundColor: AppColors.gold,
                         foregroundColor: AppColors.darkTeal,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: Text(
-                        connecting
-                            ? "Connecting..."
-                            : "Connect Google Calendar",
-                        style: TextStyle(fontSize: 14),
                       ),
                     ),
                 ],
               ),
             ),
 
-            //Your Circle
+            const SizedBox(height: 16),
+
+            // Your Circle card — NOW WITH ICON
             PapyrusCard(
               icon: const Icon(
-                LucideIcons.users,
+                LucideIcons.users, // 👈 ADDED
                 color: AppColors.darkTeal,
                 size: 20,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Your Circle',
-                    style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkTeal,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+                  Text(
+                    'View and manage your companions',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.darkTeal.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: () => widget.onNavigate(1),
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: AppColors.gold,
                           foregroundColor: AppColors.darkTeal,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'View and manage friends',
-                          style: TextStyle(fontSize: 14),
-                        ),
+                        child: Text('View and manage friends'),
                       ),
                     ],
                   ),
@@ -181,47 +209,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-            //Find Time
+            const SizedBox(height: 16),
+
+            // Find Time card — NOW WITH ICON
             PapyrusCard(
-                icon: const Icon(
-                  LucideIcons.clock,
-                  color: AppColors.darkTeal,
-                  size: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Find Time',
-                      style: TextStyle(fontSize: 20, color: AppColors.darkTeal),
+              icon: const Icon(
+                LucideIcons.clock, // 👈 ADDED
+                color: AppColors.darkTeal,
+                size: 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Find Time',
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkTeal,
                     ),
-                    const SizedBox(height: 8),
-                    
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () => widget.onNavigate(2),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gold,
-                            foregroundColor: AppColors.darkTeal,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text(
-                            user?.google.connected == true
-                                ? 'Start scheduling meetings'
-                                : 'Connect calendar first',
-                            style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user?.google.connected == true
+                        ? 'Start scheduling meetings'
+                        : 'Connect your calendar first',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.darkTeal.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      FilledButton(
+                        onPressed: user?.google.connected == true
+                            ? () => widget.onNavigate(2)
+                            : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: AppColors.darkTeal,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                        child: Text(
+                          user?.google.connected == true
+                              ? 'Start scheduling meetings'
+                              : 'Connect calendar first',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            
+            ),
           ],
         ),
       ),
