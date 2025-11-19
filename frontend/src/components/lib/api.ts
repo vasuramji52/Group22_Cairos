@@ -104,3 +104,28 @@ export async function availabilityFirst(
   }
   return res.json();
 }
+
+export interface BookMeetingParams {
+  userA: string;
+  userB: string;
+  start: string; // ISO
+  end: string;   // ISO
+  tz: string;
+  summary?: string;
+  description?: string;
+}
+
+export async function bookMeeting(params: BookMeetingParams) {
+  const res = await api("/api/availability/book", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Booking failed (${res.status})`);
+  }
+
+  return res.json(); // { ok: true }
+}
+
