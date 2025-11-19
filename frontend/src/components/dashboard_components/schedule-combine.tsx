@@ -33,7 +33,7 @@ import {
 import { getFriendsReal, type FriendDTO } from "../lib/friends.api";
 import { type Suggestion } from "../lib/mock-api";
 import { toast } from "sonner";
-import { availabilityFirst } from "../lib/api";
+import { availabilityFirst, bookMeeting } from "../lib/api";
 
 function nameOf(f: FriendDTO) {
   const n = `${(f.firstName ?? "").trim()} ${(f.lastName ?? "").trim()}`.trim();
@@ -59,11 +59,11 @@ export function ScheduleCombine() {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [ meetingTitle, setMeetingTitle ] = useState("");
+  const [meetingTitle, setMeetingTitle] = useState("");
 
   // how many slots & gap between them
   const MAX_SLOTS = 3;
-  const GAP_MINUTES = 0; // next slot must be at least 30 min after previous
+  const GAP_MINUTES = 0; // 0 = next slot starts immediately after previous
 
   function addMinutes(date: Date, minutes: number) {
     return new Date(date.getTime() + minutes * 60_000);
@@ -221,7 +221,9 @@ export function ScheduleCombine() {
         setSuggestions(slots);
         setShowSuggestions(true);
         toast.success(
-          `Found ${slots.length} available time${slots.length > 1 ? "s" : ""}!`
+          `Found ${slots.length} available time${
+            slots.length > 1 ? "s" : ""
+          }!`
         );
       }
     } catch (err: any) {
@@ -229,6 +231,34 @@ export function ScheduleCombine() {
       toast.error(err?.message || "Failed to find available times");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // 🔹 NEW: book a specific slot into both users' Google calendars
+  async function handleBookSlot(slot: Suggestion) {
+    if (!currentUserId || !selectedFriendId) {
+      toast.error("You must be logged in and have a friend selected.");
+      return;
+    }
+
+    try {
+      await bookMeeting({
+        userA: currentUserId,
+        userB: selectedFriendId,
+        start: slot.start,
+        end: slot.end,
+        tz: timezone,
+        summary: meetingTitle || `Meeting with ${nameOf(
+          (friends.find((f) => f._id === selectedFriendId) ??
+            {}) as FriendDTO
+        )}`,
+        description: "Scheduled via Kairos availability finder.",
+      });
+
+      toast.success("Meeting added to both Google Calendars!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to add meeting to calendars");
     }
   }
 
@@ -251,7 +281,6 @@ export function ScheduleCombine() {
   }
 
   const selectedFriend = friends.find((f) => f._id === selectedFriendId);
-  //const firstSuggestion = suggestions[0];
 
   const durationLabel =
     duration === "30"
@@ -263,10 +292,6 @@ export function ScheduleCombine() {
       : duration === "120"
       ? "2 hour meeting"
       : `${duration} minute meeting`;
-
-  /*const meetingDate =
-    firstSuggestion?.start ??
-    (startDate ? new Date(startDate).toISOString() : ""); */
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1B4B5A] to-[#2C6E7E] p-6">
@@ -327,7 +352,8 @@ export function ScheduleCombine() {
                 </SelectContent>
               </Select>
             </div>
-            {/*Meeting Title*/}
+
+            {/* Meeting Title */}
             <div className="space-y-2">
               <Label htmlFor="meetingTitle" className="text-[#1B4B5A]">
                 Meeting Title
@@ -467,24 +493,22 @@ export function ScheduleCombine() {
               <div className="mt-4 space-y-4">
                 {suggestions.length > 0 ? (
                   <>
-                    {/* Who / date / duration */}
+                    {/* Who / duration */}
                     <PapyrusCard>
                       <CardContent className="py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C5A572] flex items-center justify-center text-[#1B4B5A]">
                             {(
-                              nameOf((selectedFriend ?? {}) as FriendDTO).charAt(0) ||
-                              "?"
+                              nameOf((selectedFriend ?? {}) as FriendDTO).charAt(
+                                0
+                              ) || "?"
                             ).toUpperCase()}
                           </div>
                           <div>
                             <h3 className="text-[#1B4B5A]">
-                              {" "} {meetingTitle} with {" "}
+                              {meetingTitle || "Meeting"} with{" "}
                               {selectedFriend ? nameOf(selectedFriend) : "Friend"}
                             </h3>
-                            {/*<p className="text-[#2C6E7E]">
-                              {meetingDate ? formatDate(meetingDate) : "Date not set"}
-                            </p> */}
                             <p className="text-[#946923]">{durationLabel}</p>
                           </div>
                         </div>
@@ -516,10 +540,19 @@ export function ScheduleCombine() {
                                       {formatTime(s.start)} – {formatTime(s.end)}
                                     </p>
                                     <p className="text-[#2C6E7E]">
-                                    {formatDate(s.start)}
-                                   </p> 
+                                      {formatDate(s.start)}
+                                    </p>
                                   </div>
                                 </div>
+
+                                {/* Add-to-calendar button */}
+                                <Button
+                                  size="sm"
+                                  className="bg-[#1B4B5A] text-[#D4AF37] border border-[#D4AF37]"
+                                  onClick={() => handleBookSlot(s)}
+                                >
+                                  Add to Google
+                                </Button>
                               </div>
                             </CardContent>
                           </PapyrusCard>

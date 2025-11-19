@@ -12,6 +12,7 @@ const GOOGLE_TOKEN  = 'https://oauth2.googleapis.com/token';
 // add openid (+ email if you want the email too)
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly',
+  "https://www.googleapis.com/auth/calendar",
   'openid',
   'email'
 ];
