@@ -15,6 +15,14 @@ describe('mail.js', () => {
     sgMail.setApiKey = jest.fn();
   });
 
+  it('logs a warning if SENDGRID_API_KEY is not set', () => {
+    delete process.env.SENDGRID_API_KEY;
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    require('../mail');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('SENDGRID_API_KEY not set'));
+    warnSpy.mockRestore();
+  });
+
   it('throws error if SENDGRID_FROM is not set', async () => {
     process.env.SENDGRID_API_KEY = 'fakekey';
     process.env.SENDGRID_FROM = ''; // missing
