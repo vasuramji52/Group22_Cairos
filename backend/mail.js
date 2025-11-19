@@ -1,6 +1,9 @@
 // mail.js
 const sgMail = require("@sendgrid/mail");
 
+// --------------------------------------------------
+// Load and validate environment variables
+// --------------------------------------------------
 if (!process.env.SENDGRID_API_KEY) {
   console.warn("⚠️ SENDGRID_API_KEY not set. Emails will not be sent.");
 } else {
@@ -13,17 +16,20 @@ const FROM =
   null;
 
 // --------------------------------------------------
-// Generic mail sender 
+// Generic mail sender (used by verify/reset + meetings)
 // --------------------------------------------------
 async function sendMail({ to, subject, text, html }) {
+  //missing test
   if (!FROM) {
-    console.error("❌ SENDGRID_FROM_EMAIL / SENDGRID_FROM not set in .env");
-    return;
+    const err = new Error("SENDGRID_FROM not set in .env");
+    console.error("❌ SENDGRID_FROM not set in .env");
+    throw err; //reject the promise
   }
 
   if (!process.env.SENDGRID_API_KEY) {
+    const err = new Error("SENDGRID_API_KEY not set");
     console.error("❌ SENDGRID_API_KEY not set. Cannot send email.");
-    return;
+    throw err;
   }
 
   const msg = {
@@ -36,10 +42,13 @@ async function sendMail({ to, subject, text, html }) {
 
   try {
     const resp = await sgMail.send(msg);
-    console.log(`✅ Sent email to ${to} | Subject: "${subject}"`);
+    //   '✅ Sent email to a@b.com'
+    console.log(`✅ Sent email to ${to}`);
+
     return resp;
   } catch (err) {
     console.error("❌ SendGrid error:", err.response?.body || err);
+    throw err; // propagate error to callers/tests
   }
 }
 
@@ -93,7 +102,6 @@ You should also see this on your Google Calendar.
 
 — Cairos
 `.trim();
-
 
   const html = `
   <!DOCTYPE html>
@@ -169,7 +177,6 @@ You should also see this on your Google Calendar.
                     </div>
                   </div>
 
-                  <!-- Button -->
                   <a href="https://calendar.google.com"
                     style="
                       display:inline-block;
