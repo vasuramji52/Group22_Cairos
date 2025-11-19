@@ -307,62 +307,125 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ---------- LOGOUT DIALOG ----------
+  // ---------- LOGOUT MODAL BOTTOM SHEET ----------
   void _showLogoutDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) {
-        final textTheme = Theme.of(dialogCtx).textTheme;
+      isScrollControlled: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        final textTheme = Theme.of(sheetCtx).textTheme;
 
-        return AlertDialog(
-          backgroundColor: AppColors.beige,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: AppColors.gold),
-          ),
-          title: Text(
-            'Logout?',
-            style: textTheme.titleMedium?.copyWith(
-              color: AppColors.darkTeal,
-              fontWeight: FontWeight.w700,
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          decoration: const BoxDecoration(
+            color: AppColors.beige,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(color: AppColors.gold, width: 1.5),
             ),
           ),
-          content: Text(
-            'Are you sure you want to logout? You\'ll need to sign in again to access your account.',
-            style: textTheme.bodyMedium?.copyWith(
-              color: AppColors.accentTeal,
-            ),
-          ),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFC1440E), width: 1),
-                backgroundColor: Colors.white,
-              ),
-              child: Text(
-                'Cancel',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFFC1440E),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                doLogout();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: Text(
-                'Logout',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
+
+                Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.logOut,
+                      color: Color(0xFFC1440E),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Logout?',
+                      style: textTheme.titleMedium?.copyWith(
+                        color: AppColors.darkTeal,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Are you sure you want to logout? '
+                    'You\'ll need to sign in again to access Cairos.',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.accentTeal,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    // Cancel
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetCtx),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFFC1440E),
+                            width: 1,
+                          ),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFFC1440E),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Logout
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          doLogout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'Logout',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );

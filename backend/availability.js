@@ -5,22 +5,25 @@ const {
   negateBusyAndFindFirstGap,
   fetchFreeBusy,
 } = require("./availability.util.js");
-const { ObjectId } = require("mongodb"); // 🔹 add this
+const { ObjectId } = require("mongodb");
+const { sendMeetingScheduledEmail } = require("./mail"); 
 
 exports.setApp = function setApp(app, client) {
   const db = client.db("COP4331Cards");
 
-
-  app.get("/api/availability/first", /* requireAuth, */ async (req, res) => {
+  // ------------------------------------------------------------
+  // GET /api/availability/first
+  // ------------------------------------------------------------
+  app.get("/api/availability/first", async (req, res) => {
     try {
       const {
         userA,
         userB,
         minutes,
-        start, // days you want to check
+        start,
         end,
         tz = "UTC",
-        workStart, // working hours within those days
+        workStart,
         workEnd,
       } = req.query;
 
@@ -42,22 +45,22 @@ exports.setApp = function setApp(app, client) {
         return res.status(400).json({ error: "bad_minutes" });
       }
 
-      const wStart = workStart != null ? Number(workStart) : null;
-      const wEnd = workEnd != null ? Number(workEnd) : null;
+      const wStart = workStart ? Number(workStart) : null;
+      const wEnd = workEnd ? Number(workEnd) : null;
 
-      // 1) Access tokens (refresh if needed)
+      // 1) Access tokens for both users
       const [tokA, tokB] = await Promise.all([
         getGoogleAccessToken(db, userA),
         getGoogleAccessToken(db, userB),
       ]);
 
-      // 2) FreeBusy for both
+      // 2) Fetch free/busy for both
       const [busyA, busyB] = await Promise.all([
         fetchFreeBusy(tokA, timeMin.toISOString(), timeMax.toISOString(), tz),
         fetchFreeBusy(tokB, timeMin.toISOString(), timeMax.toISOString(), tz),
       ]);
 
-      // 3) Union busy intervals
+      // 3) Merge busy schedules
       const busyUnion = mergeIntervals([...busyA, ...busyB]);
 
       // 4) Find first available slot
@@ -89,7 +92,18 @@ exports.setApp = function setApp(app, client) {
     }
   });
 
-  app.post("/api/availability/book", async (req, res) => {
+  // ------------------------------------------------------------
+  // POST /api/availability/book
+  // Creates Google Calendar events + sends email notifications
+  // ------------------------------------------------------------
+  function fullName(u) {
+    const first = (u.firstName || "").trim();
+    const last = (u.lastName || "").trim();
+    const both = `${first} ${last}`.trim();
+    return both || u.email || "someone";
+  }
+
+   app.post("/api/availability/book", async (req, res) => {
     try {
       const { userA, userB, start, end, tz = "UTC", summary, description } =
         req.body;
@@ -98,23 +112,21 @@ exports.setApp = function setApp(app, client) {
         return res.status(400).json({ error: "missing_fields" });
       }
 
-      // Look up emails for attendees
+      // Look up users from the same collection as /me
       const users = await db
-        .collection("Users")
+        .collection("users") // lowercase, like /api/me
         .find({
           _id: {
             $in: [new ObjectId(userA), new ObjectId(userB)],
           },
         })
+        .project({ firstName: 1, lastName: 1, email: 1 })
         .toArray();
 
-      const attendees = users
-        .filter((u) => u.email)
-        .map((u) => ({ email: u.email }));
-
+      // We only use emails for custom SendGrid emails now
       const eventBody = {
         summary: summary || "Meeting",
-        description: description || "Scheduled via Kairos",
+        description: description || "Scheduled via Cairos",
         start: {
           dateTime: start,
           timeZone: tz,
@@ -123,7 +135,6 @@ exports.setApp = function setApp(app, client) {
           dateTime: end,
           timeZone: tz,
         },
-        ...(attendees.length ? { attendees } : {}),
       };
 
       const userIds = [userA, userB];
@@ -138,7 +149,6 @@ exports.setApp = function setApp(app, client) {
           });
         }
 
-        // Node 18+ has global fetch; if not, use node-fetch like in availability.util.js
         const r = await fetch(
           "https://www.googleapis.com/calendar/v3/calendars/primary/events",
           {
@@ -160,6 +170,42 @@ exports.setApp = function setApp(app, client) {
             details: text,
           });
         }
+      }
+
+      try {
+        if (users.length) {
+          const byId = new Map(users.map((u) => [u._id.toString(), u]));
+          const meetingTitle = summary || "Meeting";
+
+          for (const uid of userIds) {
+            const userDoc = byId.get(uid?.toString());
+            if (!userDoc || !userDoc.email) continue;
+
+            // "Host" is the other person for the email copy
+            const otherId = uid === userA ? userB : userA;
+            const otherDoc = byId.get(otherId?.toString());
+
+            const guestName = fullName(userDoc);
+            const hostName = otherDoc ? fullName(otherDoc) : "someone";
+
+            await sendMeetingScheduledEmail({
+              to: userDoc.email,
+              meetingTitle,
+              hostName,
+              guestName,
+              startISO: start,
+              endISO: end,
+              tz,
+            });
+          }
+        } else {
+          console.warn(
+            "[/api/availability/book] No users found for emails, skipping SendGrid"
+          );
+        }
+      } catch (err) {
+        console.error("sendMeetingScheduledEmail failed:", err);
+        // don't affect the booking outcome
       }
 
       return res.json({ ok: true });
