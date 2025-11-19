@@ -6,7 +6,7 @@ const {
   fetchFreeBusy,
 } = require("./availability.util.js");
 const { ObjectId } = require("mongodb");
-const { sendMeetingScheduledEmail } = require("./mail"); // <-- SendGrid helper
+const { sendMeetingScheduledEmail } = require("./mail"); 
 
 exports.setApp = function setApp(app, client) {
   const db = client.db("COP4331Cards");
@@ -126,7 +126,7 @@ exports.setApp = function setApp(app, client) {
       // We only use emails for custom SendGrid emails now
       const eventBody = {
         summary: summary || "Meeting",
-        description: description || "Scheduled via Kairos",
+        description: description || "Scheduled via Cairos",
         start: {
           dateTime: start,
           timeZone: tz,
@@ -135,12 +135,10 @@ exports.setApp = function setApp(app, client) {
           dateTime: end,
           timeZone: tz,
         },
-        // ❌ NO attendees here → no Google invites / no auto-adding to other calendars
       };
 
       const userIds = [userA, userB];
 
-      // 🔒 BOOKING LOGIC — loop + fetch unchanged, just uses eventBody above
       for (const uid of userIds) {
         const token = await getGoogleAccessToken(db, uid);
 
@@ -173,9 +171,7 @@ exports.setApp = function setApp(app, client) {
           });
         }
       }
-      // 🔒 END BOOKING LOGIC
 
-      // 📧 Custom SendGrid emails (purely our side, no Google invites)
       try {
         if (users.length) {
           const byId = new Map(users.map((u) => [u._id.toString(), u]));
