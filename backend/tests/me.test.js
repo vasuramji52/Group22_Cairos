@@ -54,3 +54,59 @@ test('GET /api/me 404 when user missing', async () => {
   expect(res.status).toBe(404);
   expect(res.body).toEqual({ error: 'user_not_found' });
 });
+
+test('GET /api/me 500 when db throws', async () => {
+  const app = express();
+  const client = {
+    db: () => ({
+      collection: () => ({
+        findOne: jest.fn(async () => { throw new Error('db fail'); })
+      })
+    })
+  };
+  me.setApp(app, client);
+
+  const res = await request(app).get('/api/me');
+  expect(res.status).toBe(500);
+  expect(res.body).toEqual({ error: 'server_error' });
+});
+
+test('GET /api/me returns accountId null if google missing', async () => {
+  const userDoc = {
+    _id: new ObjectId('507f1f77bcf86cd799439011'),
+    firstName: 'Alice',
+    lastName: 'Lee',
+    email: 'a@x.com',
+    isVerified: true,
+    // google missing
+    friends: [new ObjectId('507f1f77bcf86cd799439099')],
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-02-01')
+  };
+  const app = express();
+  const client = fakeClientWithUser(userDoc);
+  me.setApp(app, client);
+  const res = await request(app).get('/api/me');
+  expect(res.status).toBe(200);
+  expect(res.body.user.google.accountId).toBe(null);
+});
+
+test('GET /api/me returns friends as [] if not array', async () => {
+  const userDoc = {
+    _id: new ObjectId('507f1f77bcf86cd799439011'),
+    firstName: 'Alice',
+    lastName: 'Lee',
+    email: 'a@x.com',
+    isVerified: true,
+    google: { connected: true, accountId: 'g123' },
+    friends: undefined,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-02-01')
+  };
+  const app = express();
+  const client = fakeClientWithUser(userDoc);
+  me.setApp(app, client);
+  const res = await request(app).get('/api/me');
+  expect(res.status).toBe(200);
+  expect(res.body.user.friends).toEqual([]);
+});
