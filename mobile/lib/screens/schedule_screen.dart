@@ -60,7 +60,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final List<FriendDto> _friends = [];
   String? _selectedFriendId;
 
-  String _date = ''; // yyyy-MM-dd
+  String _startDate = ''; // yyyy-MM-dd
+  String _endDate = ''; // yyyy-MM-dd
+  String _meetingTitle = '';
   String _duration = '60';
 
   String _workStart = '09:00'; // HH:mm
@@ -72,7 +74,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // validation flags for required fields
   bool _friendError = false;
-  bool _dateError = false;
+  bool _startDateError = false;
+  bool _endDateError = false;
+  bool _meetingTitleError = false;
 
   String? _currentUserId;
   final List<SuggestionSlot> _suggestions = [];
@@ -80,8 +84,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Default: start = tomorrow, end = 3 days after that (like TS)
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-    _date = _formatDateForInput(tomorrow);
+    final end = tomorrow.add(const Duration(days: 3));
+    _startDate = _formatDateForInput(tomorrow);
+    _endDate = _formatDateForInput(end);
+
     _initData();
   }
 
@@ -133,6 +142,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final month = d.month.toString().padLeft(2, '0');
     final day = d.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  String _formatDateLabelShort(String isoOrDate) {
+    DateTime d;
+    if (isoOrDate.length <= 10) {
+      // yyyy-MM-dd
+      d = DateTime.parse('${isoOrDate}T00:00:00');
+    } else {
+      d = DateTime.parse(isoOrDate);
+    }
+    d = d.toLocal();
+
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    final yyyy = d.year.toString();
+    return '$mm/$dd/$yyyy'; // e.g. 11/18/2025
   }
 
   String _formatDateLabel(String isoOrDate) {
@@ -203,21 +228,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // ---------- UI HELPERS (cards + modals) ----------
 
   BoxDecoration get _sectionDecoration => BoxDecoration(
-        color: AppColors.beige.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      );
+    color: AppColors.beige.withOpacity(0.95),
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.18),
+        blurRadius: 10,
+        offset: const Offset(0, 4),
+      ),
+    ],
+  );
 
   BoxDecoration _modalDecoration() => BoxDecoration(
-        color: AppColors.beige.withOpacity(0.97),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      );
+    color: AppColors.beige.withOpacity(0.97),
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+  );
 
   Widget _buildHandleBar() {
     return Container(
@@ -328,7 +353,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // special row layout for A4: work start/end side by side
+  // special row layout for work hours: start/end side by side
   Widget _buildWorkHoursRow(BuildContext context) {
     return Row(
       children: [
@@ -369,6 +394,100 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 }
               },
               leadingIcon: LucideIcons.sunset,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // row layout for Start Date / End Date side by side
+  Widget _buildDateRangeRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(right: 6, bottom: 12),
+            decoration: _sectionDecoration.copyWith(
+              border: _startDateError
+                  ? Border.all(color: Colors.redAccent, width: 1.2)
+                  : null,
+            ),
+            child: _buildSectionTileContent(
+              context: context,
+              label: 'Start Date',
+              value: _startDate.isEmpty
+                  ? 'Select date'
+                  : _formatDateLabelShort(_startDate),
+              onTap: () async {
+                final initialDate =
+                    DateTime.tryParse('${_startDate}T00:00:00') ??
+                    DateTime.now().add(const Duration(days: 1));
+
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: initialDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _startDate = _formatDateForInput(picked);
+                    _startDateError = false;
+
+                    // if end date is before new start date, clear it
+                    if (_endDate.isNotEmpty) {
+                      final end = DateTime.tryParse('${_endDate}T00:00:00');
+                      final start = DateTime.tryParse('${_startDate}T00:00:00');
+                      if (end != null && start != null && end.isBefore(start)) {
+                        _endDate = '';
+                        _endDateError = true;
+                      }
+                    }
+                  });
+                }
+              },
+              leadingIcon: LucideIcons.calendarDays,
+              required: true,
+              hasError: _startDateError,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(left: 6, bottom: 12),
+            decoration: _sectionDecoration.copyWith(
+              border: _endDateError
+                  ? Border.all(color: Colors.redAccent, width: 1.2)
+                  : null,
+            ),
+            child: _buildSectionTileContent(
+              context: context,
+              label: 'End Date',
+              value: _endDate.isEmpty
+                  ? 'Select date'
+                  : _formatDateLabelShort(_endDate),
+              onTap: () async {
+                final baseDate = _startDate.isNotEmpty
+                    ? DateTime.tryParse('${_startDate}T00:00:00') ??
+                          DateTime.now().add(const Duration(days: 1))
+                    : DateTime.now().add(const Duration(days: 1));
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: baseDate,
+                  firstDate: baseDate,
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _endDate = _formatDateForInput(picked);
+                    _endDateError = false;
+                  });
+                }
+              },
+              leadingIcon: LucideIcons.calendarRange,
+              required: true,
+              hasError: _endDateError,
             ),
           ),
         ),
@@ -637,6 +756,81 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  // Meeting Title modal – similar styling to Timezone
+  Future<String?> _pickMeetingTitle() async {
+    final controller = TextEditingController(text: _meetingTitle);
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: SafeArea(
+            child: Container(
+              decoration: _modalDecoration(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: _buildHandleBar()),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Meeting Title',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: AppColors.darkTeal,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.darkTeal,
+                    ),
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'E.g. Project discussion',
+                      labelStyle: textTheme.bodySmall?.copyWith(
+                        color: AppColors.accentTeal,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkTeal,
+                        foregroundColor: AppColors.gold,
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop(controller.text.trim());
+                      },
+                      child: Text(
+                        'Save',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<String?> _pickTime(String currentHm) async {
     // Parse current time
     final parts = currentHm.split(':');
@@ -806,8 +1000,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ---------- BEST-TIME MODAL ----------
-  Future<void> _showBestTimeModal(SuggestionSlot slot) async {
+  // ---------- BEST-TIME MODAL (3 slots) ----------
+  Future<void> _showSlotsModal(List<SuggestionSlot> slots) async {
     FriendDto? selectedFriend;
     if (_selectedFriendId != null) {
       try {
@@ -817,9 +1011,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       }
     }
 
-    final startLabel = _formatTimeLabel(context, slot.startIso);
-    final endLabel = _formatTimeLabel(context, slot.endIso);
-    final dateLabel = _formatDateLabel(slot.startIso);
     final friendName = selectedFriend?.displayName() ?? 'Friend';
     final friendInitialChar = _friendInitial(selectedFriend);
 
@@ -836,107 +1027,195 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: Container(
             decoration: _modalDecoration(),
             padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              height: 260,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: _buildHandleBar()),
-                  const SizedBox(height: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: _buildHandleBar()),
+                const SizedBox(height: 12),
 
-                  // header: avatar + meeting info
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.gold,
-                              AppColors.gold.withOpacity(0.7),
-                            ],
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          friendInitialChar,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: AppColors.darkTeal,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Meeting with $friendName',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 19,
-                                color: AppColors.darkTeal,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              dateLabel,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: AppColors.darkTeal,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '$_duration minute meeting • $_timezone',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: AppColors.darkTeal,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$startLabel – $endLabel',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromRGBO(27, 75, 90, 1),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                // header: avatar + meeting info
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.gold,
+                            AppColors.gold.withOpacity(0.7),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.darkTeal,
-                        foregroundColor: AppColors.gold,
-                      ),
-                      onPressed: () => Navigator.of(ctx).pop(),
+                      alignment: Alignment.center,
                       child: Text(
-                        'Close',
+                        friendInitialChar,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppColors.darkTeal,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _meetingTitle.isNotEmpty
+                                ? '$_meetingTitle with $friendName'
+                                : 'Meeting with $friendName',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 19,
+                              color: AppColors.darkTeal,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$_duration minute meeting ',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: AppColors.darkTeal,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                Text(
+                  'Available time slots (${slots.length})',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: const Color.fromARGB(255, 190, 161, 65),
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: slots.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (ctx, index) {
+                      final slot = slots[index];
+                      final startLabel = _formatTimeLabel(ctx, slot.startIso);
+                      final endLabel = _formatTimeLabel(ctx, slot.endIso);
+                      final dateLabel = _formatDateLabelShort(slot.startIso);
+
+                      return Container(
+                        decoration: _sectionDecoration,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              // Square icon with slot label + timing/day
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.gold,
+                                      AppColors.gold.withOpacity(0.8),
+                                    ],
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Slot ${index + 1}',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: AppColors.darkTeal,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    // Text(
+                                    //   '$startLabel',
+                                    //   textAlign: TextAlign.center,
+                                    //   style: textTheme.bodySmall?.copyWith(
+                                    //     color: AppColors.darkTeal,
+                                    //     fontSize: 11,
+                                    //   ),
+                                    // ),
+                                    // Text(
+                                    //   dateLabel,
+                                    //   textAlign: TextAlign.center,
+                                    //   style: textTheme.bodySmall?.copyWith(
+                                    //     color: AppColors.darkTeal,
+                                    //     fontSize: 10,
+                                    //   ),
+                                    // ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Text details to the right
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '$startLabel – $endLabel',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: AppColors.darkTeal,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      dateLabel,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: AppColors.accentTeal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.darkTeal,
+                      foregroundColor: AppColors.gold,
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(
+                      'Close',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -944,22 +1223,142 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  // ---------- AVAILABILITY / findSequentialSlots ----------
+  Future<List<SuggestionSlot>> _findSequentialSlots({
+    required String userA,
+    required String userB,
+    required String startDateStr, // yyyy-MM-dd
+    required String endDateStr, // yyyy-MM-dd
+    required int minutes,
+    required String tz,
+    required String workStart,
+    required String workEnd,
+  }) async {
+    const apiStartTime = '00:00';
+    const apiEndTime = '23:59';
+    const int maxSlots = 3;
+    const int gapMinutes = 0; // same as TS GAP_MINUTES
+
+    DateTime currentStart = DateTime.parse(
+      '${startDateStr}T$apiStartTime:00',
+    ); // local
+    final DateTime windowEnd = DateTime.parse(
+      '${endDateStr}T$apiEndTime:00',
+    ); // local
+
+    final List<SuggestionSlot> results = [];
+
+    while (results.length < maxSlots && currentStart.isBefore(windowEnd)) {
+      final startIso = currentStart.toUtc().toIso8601String();
+      final endIso = windowEnd.toUtc().toIso8601String();
+
+      final workStartHour = int.tryParse(workStart.split(':').first) ?? 9;
+      final workEndHour = int.tryParse(workEnd.split(':').first) ?? 17;
+
+      final queryParams = {
+        'userA': userA,
+        'userB': userB,
+        'minutes': minutes.toString(),
+        'start': startIso,
+        'end': endIso,
+        'tz': tz,
+        'workStart': workStartHour.toString(),
+        'workEnd': workEndHour.toString(),
+      };
+
+      final queryString = Uri(queryParameters: queryParams).query;
+
+      final res = await ApiService.api(
+        '/availability/first?$queryString',
+        method: 'GET',
+      );
+
+      if (res.statusCode != 200) {
+        final text = res.body;
+        throw Exception(text.isNotEmpty ? text : 'Request failed');
+      }
+
+      final data = json.decode(res.body) as Map<String, dynamic>;
+
+      // Handle "no_slot"
+      if (data['ok'] == false && data['error'] == 'no_slot') {
+        break;
+      }
+
+      // Other error
+      if (data['error'] != null && data['error'] != 'no_slot') {
+        throw Exception(data['error'].toString());
+      }
+
+      // Normalize slot shape as in TS:
+      Map<String, dynamic>? first;
+      if (data['slot'] != null) {
+        first = Map<String, dynamic>.from(data['slot']);
+      } else if (data['firstSlot'] != null) {
+        first = Map<String, dynamic>.from(data['firstSlot']);
+      } else if (data['slotStart'] != null && data['slotEnd'] != null) {
+        first = {'start': data['slotStart'], 'end': data['slotEnd']};
+      } else if (data['slots'] is List && (data['slots'] as List).isNotEmpty) {
+        first = Map<String, dynamic>.from((data['slots'] as List).first);
+      }
+
+      if (first == null ||
+          first['start'] == null ||
+          first['end'] == null ||
+          first['start'].toString().isEmpty ||
+          first['end'].toString().isEmpty) {
+        // No more slots
+        break;
+      }
+
+      final slot = SuggestionSlot(
+        startIso: first['start'].toString(),
+        endIso: first['end'].toString(),
+      );
+
+      results.add(slot);
+
+      // move currentStart to just after this slot plus gap
+      DateTime slotEnd = DateTime.parse(slot.endIso);
+      currentStart = slotEnd.add(const Duration(minutes: gapMinutes));
+    }
+
+    return results;
+  }
+
   // ---------- ACTION: find time ----------
   Future<void> _handleFindTime() async {
     // light haptic on CTA press
     HapticFeedback.lightImpact();
 
-    bool missingFriend =
+    final bool missingFriend =
         _selectedFriendId == null || _selectedFriendId!.isEmpty;
-    bool missingDate = _date.isEmpty;
+    final bool missingStart = _startDate.isEmpty;
+    final bool missingEnd = _endDate.isEmpty;
+    final bool missingTitle = _meetingTitle.trim().isEmpty;
 
-    if (missingFriend || missingDate) {
+    if (missingFriend || missingStart || missingEnd || missingTitle) {
       setState(() {
         _friendError = missingFriend;
-        _dateError = missingDate;
+        _startDateError = missingStart;
+        _endDateError = missingEnd;
+        _meetingTitleError = missingTitle;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all required fields')),
+      );
+      HapticFeedback.mediumImpact();
+      return;
+    }
+
+    // validate start <= end
+    final startD = DateTime.tryParse('${_startDate}T00:00:00');
+    final endD = DateTime.tryParse('${_endDate}T00:00:00');
+    if (startD != null && endD != null && endD.isBefore(startD)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End date must be on or after the start date.'),
+        ),
       );
       HapticFeedback.mediumImpact();
       return;
@@ -979,49 +1378,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _loading = true;
     });
 
-    const apiStartTime = '00:00';
-    const apiEndTime = '23:59';
     final durationMinutes = int.tryParse(_duration) ?? 30;
 
     try {
-      // Build the same ISO range as in React
-      final startLocal = DateTime.parse('${_date}T$apiStartTime:00');
-      final endLocal = DateTime.parse('${_date}T$apiEndTime:00');
-      final startIso = startLocal.toUtc().toIso8601String();
-      final endIso = endLocal.toUtc().toIso8601String();
-
-      final workStartHour = int.tryParse(_workStart.split(':').first) ?? 9;
-      final workEndHour = int.tryParse(_workEnd.split(':').first) ?? 17;
-
-      final queryParams = {
-        'userA': _currentUserId!,
-        'userB': _selectedFriendId!,
-        'minutes': durationMinutes.toString(),
-        'start': startIso,
-        'end': endIso,
-        'tz': _timezone,
-        'workStart': workStartHour.toString(),
-        'workEnd': workEndHour.toString(),
-      };
-
-      final queryString = Uri(queryParameters: queryParams).query;
-
-      final res = await ApiService.api(
-        '/availability/first?$queryString',
-        method: 'GET',
+      final slots = await _findSequentialSlots(
+        userA: _currentUserId!,
+        userB: _selectedFriendId!,
+        startDateStr: _startDate,
+        endDateStr: _endDate,
+        minutes: durationMinutes,
+        tz: _timezone,
+        workStart: _workStart,
+        workEnd: _workEnd,
       );
 
       if (!mounted) return;
 
-      if (res.statusCode != 200) {
-        final text = res.body;
-        throw Exception(text.isNotEmpty ? text : 'Request failed');
-      }
-
-      final data = json.decode(res.body) as Map<String, dynamic>;
-
-      // Handle "no_slot"
-      if (data['ok'] == false && data['error'] == 'no_slot') {
+      if (slots.isEmpty) {
         setState(() {
           _suggestions.clear();
         });
@@ -1031,57 +1404,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         );
         HapticFeedback.mediumImpact();
-        return;
-      }
-
-      // Other error
-      if (data['error'] != null && data['error'] != 'no_slot') {
-        throw Exception(data['error'].toString());
-      }
-
-      // Normalize shapes like in React:
-      // slot, firstSlot, slotStart/slotEnd, slots[0]
-      Map<String, dynamic>? first;
-      if (data['slot'] != null) {
-        first = Map<String, dynamic>.from(data['slot']);
-      } else if (data['firstSlot'] != null) {
-        first = Map<String, dynamic>.from(data['firstSlot']);
-      } else if (data['slotStart'] != null && data['slotEnd'] != null) {
-        first = {'start': data['slotStart'], 'end': data['slotEnd']};
-      } else if (data['slots'] is List && (data['slots'] as List).isNotEmpty) {
-        first = Map<String, dynamic>.from((data['slots'] as List).first);
-      }
-
-      if (first != null &&
-          first['start'] != null &&
-          first['end'] != null &&
-          first['start'].toString().isNotEmpty &&
-          first['end'].toString().isNotEmpty) {
-        final slot = SuggestionSlot(
-          startIso: first['start'].toString(),
-          endIso: first['end'].toString(),
-        );
-
+      } else {
         setState(() {
           _suggestions
             ..clear()
-            ..add(slot);
+            ..addAll(slots);
         });
-
         HapticFeedback.lightImpact();
-
-        // show modal with best time
-        await _showBestTimeModal(slot);
-      } else {
-        setState(() {
-          _suggestions.clear();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No available times found in this window'),
-          ),
-        );
-        HapticFeedback.mediumImpact();
+        await _showSlotsModal(slots);
       }
     } catch (e) {
       debugPrint('availability error: $e');
@@ -1196,37 +1526,42 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                          ),
-                          minimumSize: const Size.fromHeight(56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            side: BorderSide(
-                              color: AppColors.gold,
-                              width: 2,
+                        style:
+                            ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              minimumSize: const Size.fromHeight(56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                side: BorderSide(
+                                  color: AppColors.gold,
+                                  width: 2,
+                                ),
+                              ),
+                              backgroundColor: AppColors.darkTeal,
+                              foregroundColor: AppColors.gold,
+                              elevation: 0, // shadow handled by DecoratedBox
+                            ).copyWith(
+                              backgroundColor:
+                                  MaterialStateProperty.resolveWith((states) {
+                                    if (states.contains(
+                                      MaterialState.disabled,
+                                    )) {
+                                      return AppColors.accentTeal;
+                                    }
+                                    return AppColors.darkTeal;
+                                  }),
+                              foregroundColor:
+                                  MaterialStateProperty.resolveWith((states) {
+                                    if (states.contains(
+                                      MaterialState.disabled,
+                                    )) {
+                                      return const Color(0xFFC5A572);
+                                    }
+                                    return AppColors.gold;
+                                  }),
                             ),
-                          ),
-                          backgroundColor: AppColors.darkTeal,
-                          foregroundColor: AppColors.gold,
-                          elevation: 0, // shadow handled by DecoratedBox
-                        ).copyWith(
-                          backgroundColor:
-                              MaterialStateProperty.resolveWith((states) {
-                            if (states.contains(MaterialState.disabled)) {
-                              return AppColors.accentTeal;
-                            }
-                            return AppColors.darkTeal;
-                          }),
-                          foregroundColor:
-                              MaterialStateProperty.resolveWith((states) {
-                            if (states.contains(MaterialState.disabled)) {
-                              return const Color(0xFFC5A572);
-                            }
-                            return AppColors.gold;
-                          }),
-                        ),
                         onPressed: canSubmit ? _handleFindTime : null,
                         icon: _loading
                             ? const SizedBox(
@@ -1277,7 +1612,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       // simple skeleton placeholders
       return Column(
         children: List.generate(
-          4,
+          5,
           (index) => Container(
             margin: const EdgeInsets.only(bottom: 12),
             height: 68,
@@ -1295,9 +1630,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ? 'Choose a friend...'
         : (friend?.displayName() ?? 'Choose a friend...');
 
-    final friendStatus = _selectedFriendId == null
-        ? 'No friend selected yet'
-        : 'Meeting with ${friend?.displayName() ?? 'friend'}';
+    // final friendStatus = _selectedFriendId == null
+    //     ? 'No friend selected yet'
+    //     : 'Meeting with ${friend?.displayName() ?? 'friend'}';
 
     final durationLabel =
         {
@@ -1307,6 +1642,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           '120': '2 hours',
         }[_duration] ??
         '$_duration minutes';
+
+    final meetingTitleLabel = _meetingTitle.isEmpty
+        ? 'Tap to add a title'
+        : _meetingTitle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1342,17 +1681,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            friendStatus,
-            style: textTheme.bodySmall?.copyWith(color: Colors.white70),
-          ),
+          // child: Text(
+          //   // friendStatus,
+          //   style: textTheme.bodySmall?.copyWith(color: Colors.white70),
+          // ),
         ),
 
         const SizedBox(height: 8),
 
-        // Section: Date & Duration
+        // Section: Meeting Details
         Text(
-          'Date & Duration',
+          'Meeting Details',
           style: textTheme.titleSmall?.copyWith(
             color: AppColors.gold,
             fontWeight: FontWeight.w600,
@@ -1362,29 +1701,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
         _buildSectionTile(
           context: context,
-          label: 'Date',
-          value: _date.isEmpty ? 'Select date' : _formatDateLabel(_date),
+          label: 'Meeting Title',
+          value: meetingTitleLabel,
           onTap: () async {
-            final initialDate =
-                DateTime.tryParse('${_date}T00:00:00') ??
-                    DateTime.now().add(const Duration(days: 1));
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: initialDate,
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-            );
-            if (picked != null) {
+            final newTitle = await _pickMeetingTitle();
+            if (newTitle != null) {
               setState(() {
-                _date = _formatDateForInput(picked);
-                _dateError = false;
+                _meetingTitle = newTitle;
+                _meetingTitleError = _meetingTitle.trim().isEmpty;
               });
             }
           },
-          leadingIcon: LucideIcons.calendarDays,
+          leadingIcon: LucideIcons.type,
           required: true,
-          hasError: _dateError,
+          hasError: _meetingTitleError,
         ),
+
+        const SizedBox(height: 8),
+
+        // Section: Date Range & Duration
+        Text(
+          'Date Range & Duration',
+          style: textTheme.titleSmall?.copyWith(
+            color: AppColors.gold,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        _buildDateRangeRow(context),
 
         _buildSectionTile(
           context: context,
