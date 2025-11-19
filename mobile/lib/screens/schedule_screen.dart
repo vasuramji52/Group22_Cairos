@@ -228,21 +228,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // ---------- UI HELPERS (cards + modals) ----------
 
   BoxDecoration get _sectionDecoration => BoxDecoration(
-    color: AppColors.beige.withOpacity(0.95),
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.18),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  );
+        color: AppColors.beige.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
 
   BoxDecoration _modalDecoration() => BoxDecoration(
-    color: AppColors.beige.withOpacity(0.97),
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-  );
+        color: AppColors.beige.withOpacity(0.97),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      );
 
   Widget _buildHandleBar() {
     return Container(
@@ -422,7 +422,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               onTap: () async {
                 final initialDate =
                     DateTime.tryParse('${_startDate}T00:00:00') ??
-                    DateTime.now().add(const Duration(days: 1));
+                        DateTime.now().add(const Duration(days: 1));
 
                 final picked = await showDatePicker(
                   context: context,
@@ -438,7 +438,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     // if end date is before new start date, clear it
                     if (_endDate.isNotEmpty) {
                       final end = DateTime.tryParse('${_endDate}T00:00:00');
-                      final start = DateTime.tryParse('${_startDate}T00:00:00');
+                      final start =
+                          DateTime.tryParse('${_startDate}T00:00:00');
                       if (end != null && start != null && end.isBefore(start)) {
                         _endDate = '';
                         _endDateError = true;
@@ -470,7 +471,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               onTap: () async {
                 final baseDate = _startDate.isNotEmpty
                     ? DateTime.tryParse('${_startDate}T00:00:00') ??
-                          DateTime.now().add(const Duration(days: 1))
+                        DateTime.now().add(const Duration(days: 1))
                     : DateTime.now().add(const Duration(days: 1));
                 final picked = await showDatePicker(
                   context: context,
@@ -1000,6 +1001,93 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  // ---------- BOOK MEETING (Add to Calendar) ----------
+  Future<void> _handleBookSlot(SuggestionSlot slot) async {
+    // subtle haptic feedback
+    HapticFeedback.lightImpact();
+
+    if (_currentUserId == null ||
+        _currentUserId!.isEmpty ||
+        _selectedFriendId == null ||
+        _selectedFriendId!.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('You must be logged in and have a friend selected.'),
+        ),
+      );
+      HapticFeedback.mediumImpact();
+      return;
+    }
+
+    // find selected friend for summary fallback
+    FriendDto? selectedFriend;
+    try {
+      selectedFriend = _friends.firstWhere((f) => f.id == _selectedFriendId);
+    } catch (_) {
+      selectedFriend = null;
+    }
+
+    final friendName = selectedFriend?.displayName() ?? 'Friend';
+
+    final summary = _meetingTitle.trim().isNotEmpty
+        ? _meetingTitle.trim()
+        : 'Meeting with $friendName';
+
+    try {
+  final res = await ApiService.api(
+    '/availability/book',
+    method: 'POST',
+    body: {
+      'userA': _currentUserId,
+      'userB': _selectedFriendId,
+      'start': slot.startIso,
+      'end': slot.endIso,
+      'tz': _timezone,
+      'summary': summary,
+      'description': 'Scheduled via Kairos availability finder.',
+    },
+  );
+
+  if (res.statusCode != 200) {
+    final text = res.body;
+    throw Exception(
+      text.isNotEmpty ? text : 'Booking failed (${res.statusCode})',
+    );
+  }
+
+  final data = jsonDecode(res.body);
+  if (data is Map && data['ok'] != true) {
+    throw Exception(data['error']?.toString() ?? 'Booking failed');
+  }
+
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Meeting added to both Google Calendars!'),
+    ),
+  );
+
+  Navigator.of(context).pop();
+  HapticFeedback.lightImpact();
+
+} catch (e) {
+  debugPrint('book meeting error: $e');
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        e.toString().replaceFirst('Exception: ', ''),
+      ),
+    ),
+  );
+  HapticFeedback.mediumImpact();
+}
+
+  }
+
   // ---------- BEST-TIME MODAL (3 slots) ----------
   Future<void> _showSlotsModal(List<SuggestionSlot> slots) async {
     FriendDto? selectedFriend;
@@ -1148,22 +1236,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    // Text(
-                                    //   '$startLabel',
-                                    //   textAlign: TextAlign.center,
-                                    //   style: textTheme.bodySmall?.copyWith(
-                                    //     color: AppColors.darkTeal,
-                                    //     fontSize: 11,
-                                    //   ),
-                                    // ),
-                                    // Text(
-                                    //   dateLabel,
-                                    //   textAlign: TextAlign.center,
-                                    //   style: textTheme.bodySmall?.copyWith(
-                                    //     color: AppColors.darkTeal,
-                                    //     fontSize: 10,
-                                    //   ),
-                                    // ),
                                   ],
                                 ),
                               ),
@@ -1189,6 +1261,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     ),
                                   ],
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Add-to-calendar button
+                              ElevatedButton.icon(
+                                onPressed: () => _handleBookSlot(slot),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.darkTeal,
+                                  foregroundColor: AppColors.gold,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  textStyle: textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  LucideIcons.calendarPlus,
+                                  size: 16,
+                                ),
+                                label: const Text('Add to Google'),
                               ),
                             ],
                           ),
@@ -1526,42 +1619,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        style:
-                            ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              minimumSize: const Size.fromHeight(56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                side: BorderSide(
-                                  color: AppColors.gold,
-                                  width: 2,
-                                ),
-                              ),
-                              backgroundColor: AppColors.darkTeal,
-                              foregroundColor: AppColors.gold,
-                              elevation: 0, // shadow handled by DecoratedBox
-                            ).copyWith(
-                              backgroundColor:
-                                  MaterialStateProperty.resolveWith((states) {
-                                    if (states.contains(
-                                      MaterialState.disabled,
-                                    )) {
-                                      return AppColors.accentTeal;
-                                    }
-                                    return AppColors.darkTeal;
-                                  }),
-                              foregroundColor:
-                                  MaterialStateProperty.resolveWith((states) {
-                                    if (states.contains(
-                                      MaterialState.disabled,
-                                    )) {
-                                      return const Color(0xFFC5A572);
-                                    }
-                                    return AppColors.gold;
-                                  }),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          minimumSize: const Size.fromHeight(56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            side: BorderSide(
+                              color: AppColors.gold,
+                              width: 2,
                             ),
+                          ),
+                          backgroundColor: AppColors.darkTeal,
+                          foregroundColor: AppColors.gold,
+                          elevation: 0, // shadow handled by DecoratedBox
+                        ).copyWith(
+                          backgroundColor:
+                              MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(
+                              MaterialState.disabled,
+                            )) {
+                              return AppColors.accentTeal;
+                            }
+                            return AppColors.darkTeal;
+                          }),
+                          foregroundColor:
+                              MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(
+                              MaterialState.disabled,
+                            )) {
+                              return const Color(0xFFC5A572);
+                            }
+                            return AppColors.gold;
+                          }),
+                        ),
                         onPressed: canSubmit ? _handleFindTime : null,
                         icon: _loading
                             ? const SizedBox(
@@ -1630,10 +1722,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ? 'Choose a friend...'
         : (friend?.displayName() ?? 'Choose a friend...');
 
-    // final friendStatus = _selectedFriendId == null
-    //     ? 'No friend selected yet'
-    //     : 'Meeting with ${friend?.displayName() ?? 'friend'}';
-
     final durationLabel =
         {
           '30': '30 minutes',
@@ -1641,11 +1729,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           '90': '1.5 hours',
           '120': '2 hours',
         }[_duration] ??
-        '$_duration minutes';
+            '$_duration minutes';
 
-    final meetingTitleLabel = _meetingTitle.isEmpty
-        ? 'Tap to add a title'
-        : _meetingTitle;
+    final meetingTitleLabel =
+        _meetingTitle.isEmpty ? 'Tap to add a title' : _meetingTitle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1681,10 +1768,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
-          // child: Text(
-          //   // friendStatus,
-          //   style: textTheme.bodySmall?.copyWith(color: Colors.white70),
-          // ),
         ),
 
         const SizedBox(height: 8),
