@@ -1,9 +1,6 @@
 // mail.js
 const sgMail = require("@sendgrid/mail");
 
-// --------------------------------------------------
-// Load and validate environment variables
-// --------------------------------------------------
 if (!process.env.SENDGRID_API_KEY) {
   console.warn("⚠️ SENDGRID_API_KEY not set. Emails will not be sent.");
 } else {
@@ -16,7 +13,7 @@ const FROM =
   null;
 
 // --------------------------------------------------
-// Generic mail sender (used by verify/reset + meetings)
+// Generic mail sender 
 // --------------------------------------------------
 async function sendMail({ to, subject, text, html }) {
   if (!FROM) {
@@ -97,9 +94,7 @@ You should also see this on your Google Calendar.
 — Cairos
 `.trim();
 
-  // --------------------------------------------------
-  // Beautiful HTML Email Template
-  // --------------------------------------------------
+
   const html = `
   <!DOCTYPE html>
   <html lang="en">
@@ -130,7 +125,7 @@ You should also see this on your Google Calendar.
                   color:#FDF7EA;
                 ">
                   <div style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;">
-                    Kairos Scheduling
+                    Cairos Scheduling
                   </div>
                   <div style="font-size:20px;font-weight:600;margin-top:4px;">
                     New Meeting Scheduled

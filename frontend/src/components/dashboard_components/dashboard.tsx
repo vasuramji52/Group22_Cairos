@@ -174,7 +174,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1B4B5A]/90 to-transparent flex items-center px-8">
             <div>
-              <h2 className="text-[#D4AF37] mb-2">Seize Your Kairos</h2>
+              <h2 className="text-[#D4AF37] mb-2">Seize Your Cairos</h2>
               <p className="text-[#F5E6D3] max-w-md">
                 Like the ancient Egyptians tracked time by the sun, discover the
                 perfect moments to meet with your companions.
