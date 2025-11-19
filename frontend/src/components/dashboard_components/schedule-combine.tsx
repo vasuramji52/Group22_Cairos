@@ -252,7 +252,7 @@ export function ScheduleCombine() {
           (friends.find((f) => f._id === selectedFriendId) ??
             {}) as FriendDTO
         )}`,
-        description: "Scheduled via Kairos availability finder.",
+        description: "Scheduled via Cairos availability finder.",
       });
 
       toast.success("Meeting added to both Google Calendars!");
