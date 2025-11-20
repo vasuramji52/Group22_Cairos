@@ -6,15 +6,15 @@ import '../models/user.dart';
 
 class ApiService {
   /// 👇 Use the production API when deployed
-  static const String prodBaseUrl = 'https://api.vasupradha.xyz/api';
+  static const String prodBaseUrl = 'https://vasupradha.xyz/api';
 
   /// 👇 Use local server when testing on an Android emulator
   /// (Flutter uses 10.0.2.2 instead of localhost)
-  static const String localBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String localBaseUrl = 'https://10.0.2.2:5000/api';
   //static const String localBaseUrl = 'http://localhost:5000/api';
 
   /// 👇 Choose the correct one automatically
-  static const bool useLocal = true; // change to false for production
+  static const bool useLocal = false; // change to false for production
   static String get baseUrl => useLocal ? localBaseUrl : prodBaseUrl;
 
   // Use secure storage for storing token (instead of localStorage)
